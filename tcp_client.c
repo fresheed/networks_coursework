@@ -53,13 +53,12 @@ int main(int argc, char* argv[]){
 
   if (connect(client_socket_fd,(struct sockaddr *)&server_address, sizeof(server_address)) < 0) 
     on_error("ERROR connecting\n");
-  
-  exchangeData(client_socket_fd, "aaaa");
-  sleep(2);
-  exchangeData(client_socket_fd, "bbbb");
-  sleep(2);
-  exchangeData(client_socket_fd, "cccc");
-  
+
+  int i;
+  for (i=0; i<10; i++){
+    exchangeData(client_socket_fd, "aaaa");
+    sleep(2);
+  }
 
   close(client_socket_fd);
   return 0;  
