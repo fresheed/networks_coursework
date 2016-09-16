@@ -49,15 +49,13 @@ int prepareServerSocket(){
   return server_socket_fd;
 }
 
-int getClientSocket(int server_socket_fd){
+int acceptClient(int server_socket_fd){
   struct sockaddr_in client_address;
   int client_address_size=sizeof(client_address);
   printf("Waiting for client to connect...\n");
 
   int client_socket_fd=accept(server_socket_fd, (struct sockaddr*)&client_address, &client_address_size);
-  if (client_socket_fd < 0){
-    on_error("client accept failed!");
-  }
+  printf("got fd: %d...\n", client_socket_fd);
 
   return client_socket_fd;
 }
@@ -67,7 +65,6 @@ int readN(int socket_fd, char* read_buf){
   const int recv_flags=0;
   memset(read_buf, 0, Nread);
   int actual_read=recv(socket_fd, read_buf, Nread, recv_flags);
-  printf("Read: %d\n", actual_read);
   return actual_read==Nread;
 }
 
@@ -79,22 +76,54 @@ int sendResponse(char* msg, int client_socket_fd){
   return (num_bytes_processed>=0);
 }
 
-void runAcceptClients(int server_socket_fd){
-  char buffer[256];
-  int client_socket_fd=getClientSocket(server_socket_fd);
-  
+void* processClient(void* arg){
   // at this point client is already connected
+  int client_socket_fd=*(int*)arg;
+  char buffer[256];
   do {
     if (!readN(client_socket_fd, buffer)){
-      closeFdAbnormally(server_socket_fd, "Client closed connection or sent less than N bytes\n");
+      printf( "Client closed connection or sent less than N bytes\n");
+      break;
     }
-    printf("Client message: %s\n", buffer);
+    printf("  Client %d message: %s\n",client_socket_fd,  buffer);
     
     if (!sendResponse(buffer, client_socket_fd)) {
-      closeFdAbnormally(server_socket_fd, "Error sending response");
+      printf( "Client closed connection or accepted less than N bytes\n");
+      break;
     }
   } while ((strcmp(buffer, "exit")));// && num_bytes_processed);
+}
+
+void runAcceptClients(int server_socket_fd){
+
+  //while (1){
+#define MAX_CLIENTS 2
+  int clients_fds[MAX_CLIENTS];
+  pthread_t clients_threads[MAX_CLIENTS];
+  int cl=0;
+  while(cl<MAX_CLIENTS){
+    int tmp_fd=acceptClient(server_socket_fd);
+    if (tmp_fd > 0){
+      clients_fds[cl]=tmp_fd;
+      pthread_create(&(clients_threads[cl]), NULL, &processClient, &(clients_fds[cl]));
+      printf("Created client thread\n");
+      cl++;
+    } else {
+      break;
+    }
+  }
   
+  int i;
+  for (i=0; i<cl; i++){
+    close(clients_fds[i]);
+  }
+  for (i=0; i<cl; i++){
+    pthread_join(clients_threads[i], NULL);
+    printf("Joined and closed client\n");
+  }
+  
+  
+    //}
 }
 
 int main(int argc, char *argv[]){
@@ -103,6 +132,7 @@ int main(int argc, char *argv[]){
   
   pthread_t accept_thread;
   pthread_create(&accept_thread, NULL, &runAcceptClients, server_socket_fd);
+
 
   pthread_join(accept_thread, NULL);
 
