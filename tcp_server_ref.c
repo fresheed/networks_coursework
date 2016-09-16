@@ -86,7 +86,6 @@ int main(int argc, char *argv[]){
   int client_socket_fd=getClientSocket(server_socket_fd);
   
   // at this point client is already connected
-  int num_bytes_processed;
   do {
     if (!readN(client_socket_fd, buffer)){
       closeFdAbnormally(server_socket_fd, "Client closed connection or sent less than N bytes\n");
@@ -96,7 +95,7 @@ int main(int argc, char *argv[]){
     if (!sendResponse(buffer, client_socket_fd)) {
       closeFdAbnormally(server_socket_fd, "Error sending response");
     }
-  } while ((strcmp(buffer, "exit")) && num_bytes_processed);
+  } while ((strcmp(buffer, "exit")));// && num_bytes_processed);
 
   close(server_socket_fd);
   return 0;
