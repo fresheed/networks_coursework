@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <pthread.h>
 
 char errbuf[300];
 void on_error(char *msg){
@@ -78,11 +79,8 @@ int sendResponse(char* msg, int client_socket_fd){
   return (num_bytes_processed>=0);
 }
 
-int main(int argc, char *argv[]){
+void runAcceptClients(int server_socket_fd){
   char buffer[256];
-
-  int server_socket_fd=prepareServerSocket();
-  
   int client_socket_fd=getClientSocket(server_socket_fd);
   
   // at this point client is already connected
@@ -96,6 +94,17 @@ int main(int argc, char *argv[]){
       closeFdAbnormally(server_socket_fd, "Error sending response");
     }
   } while ((strcmp(buffer, "exit")));// && num_bytes_processed);
+  
+}
+
+int main(int argc, char *argv[]){
+
+  int server_socket_fd=prepareServerSocket();
+  
+  pthread_t accept_thread;
+  pthread_create(&accept_thread, NULL, &runAcceptClients, server_socket_fd);
+
+  pthread_join(accept_thread, NULL);
 
   close(server_socket_fd);
   return 0;
