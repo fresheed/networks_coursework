@@ -54,7 +54,7 @@ int getClientSocket(int server_socket_fd){
   int client_address_size=sizeof(client_address);
   printf("Waiting for client to connect...\n");
 
-  int client_socket_fd=accept(server_socket_fd, (struct sockaddr*)&client_socket_fd, &client_address_size);
+  int client_socket_fd=accept(server_socket_fd, (struct sockaddr*)&client_address, &client_address_size);
   if (client_socket_fd < 0){
     on_error("client accept failed!");
   }
