@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include "init_sockets.h"
+#include "logs.h"
 
 char errbuf[300];
 void on_error(char *msg){
@@ -21,14 +22,6 @@ void closeFdAbnormally(int fd, char* msg){
   close(fd);
   on_error(msg);
 }
-
-void threadLog(){
-  pthread_t this_thread=pthread_self();
-  unsigned int tid=(unsigned int)this_thread;
-  printf("Thread %d:", tid);
-}
-
-
 
 int readN(int socket_fd, char* read_buf){
   const int message_len=4;
