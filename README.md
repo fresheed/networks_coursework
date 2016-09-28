@@ -1,2 +1,2 @@
 # networks_coursework
-Repo for client-server sockets app
+Для Linux: выполнить recompile.sh. Далее запустить tcp_server, а затем - tcp_client с ключом localhost. 
