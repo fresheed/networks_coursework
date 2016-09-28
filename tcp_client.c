@@ -15,15 +15,25 @@ void on_error(char *msg){
 
 void exchangeData(int client_socket_fd, char* msg){
   char buffer[256];
-  int num_bytes_read = write(client_socket_fd, msg, strlen(msg));
-  if (num_bytes_read < 0) 
+  //  int num_bytes_read = write(client_socket_fd, msg, strlen(msg));
+  const int send_flags=0;
+  int num_bytes_send = send(client_socket_fd, msg, strlen(msg), send_flags);
+  if (num_bytes_send < 0) 
     on_error("ERROR writing to socket");
+  printf("Send %d bytes\n", num_bytes_send);
   bzero(buffer,256);
-  num_bytes_read = read(client_socket_fd,buffer,255);
+  int num_bytes_read = read(client_socket_fd, buffer,255);
   if (num_bytes_read < 0) 
     on_error("ERROR reading from socket");
   printf("%s\n",buffer);
-  
+}
+
+void sendDataAndSleep(int socket_fd, char* msg){
+  const int send_flags=0;
+  int num_bytes_send = send(socket_fd, msg, strlen(msg), send_flags);
+  if (num_bytes_send < 0) 
+    on_error("ERROR writing to socket");
+  sleep(1);
 }
 
 int main(int argc, char* argv[]){
@@ -53,12 +63,15 @@ int main(int argc, char* argv[]){
 
   if (connect(client_socket_fd,(struct sockaddr *)&server_address, sizeof(server_address)) < 0) 
     on_error("ERROR connecting\n");
+  
+  sendDataAndSleep(client_socket_fd, "a");
+  sendDataAndSleep(client_socket_fd, "bcd");
 
-  int i;
-  for (i=0; i<10; i++){
-    exchangeData(client_socket_fd, "aaaa");
-    sleep(2);
-  }
+  sendDataAndSleep(client_socket_fd, "ab");
+  sendDataAndSleep(client_socket_fd, "cd");
+
+  sendDataAndSleep(client_socket_fd, "abcda");
+  sendDataAndSleep(client_socket_fd, "bcd");
 
   close(client_socket_fd);
   return 0;  
