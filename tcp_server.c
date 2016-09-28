@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include "init_sockets.h"
 #include "logs.h"
+#include "client_data.h"
 
 char errbuf[300];
 void on_error(char *msg){
@@ -61,29 +62,35 @@ void* processClient(void* arg){
   char buffer[256];
   do {
     if (!readN(client_socket_fd, buffer)){
-      printf("Client closed connection or sent less than N bytes\n");
+      printf("Client closed connection\n");
       break;
     }
     threadLog();
-    printf("  Client %d message: %s\n",client_socket_fd,  buffer);
-    
-    if (!sendResponse(buffer, client_socket_fd)) {
-      printf( "Client closed connection or accepted less than N bytes\n");
+    printf("Client %d message: %s\n",client_socket_fd,  buffer);
+    if (!sendResponse(buffer, client_socket_fd)){
+      printf( "Client closed connection\n");
       break;
     }
   } while ((strcmp(buffer, "exit")));// && num_bytes_processed);
+  threadLog();
+  printf("Exiting thread\n");
+  pthread_exit(NULL);
 }
 
 #define MAX_CLIENTS 3
+struct client_data clients[MAX_CLIENTS];
 void runAcceptClients(int server_socket_fd){
-  int clients_fds[MAX_CLIENTS];
-  pthread_t clients_threads[MAX_CLIENTS];
+  /* int clients_fds[MAX_CLIENTS]; */
+  /* pthread_t clients_threads[MAX_CLIENTS]; */
   int cl=0;
   while(cl<MAX_CLIENTS){
     int tmp_fd=acceptClient(server_socket_fd);
     if (tmp_fd > 0){
-      clients_fds[cl]=tmp_fd;
-      pthread_create(&(clients_threads[cl]), NULL, &processClient, &(clients_fds[cl]));
+      /* clients_fds[cl]=tmp_fd; */
+      /* pthread_create(&(clients_threads[cl]), NULL, &processClient, &(clients_fds[cl])); */
+      clients[cl].socket_fd=tmp_fd;
+      pthread_mutex_init(&(clients[cl].mutex), NULL);
+      pthread_create(&(clients[cl].thread), NULL, &processClient, &(clients[cl].socket_fd));
       threadLog();
       printf("Created client thread\n");
       cl++;
@@ -100,13 +107,19 @@ void runAcceptClients(int server_socket_fd){
   printf("Closing client sockets...\n");
   int i;
   for (i=0; i<cl; i++){
-    close(clients_fds[i]);
+    /* close(clients_fds[i]); */
+    pthread_mutex_lock(&(clients[i].mutex));
+    close(clients[i].socket_fd);
+    pthread_mutex_unlock(&(clients[i].mutex));
   }
   threadLog();
   printf("Joining client threads...\n");
   for (i=0; i<cl; i++){
-    pthread_join(clients_threads[i], NULL);
-    printf("Joined and closed client\n");
+    /* pthread_join(clients_threads[i], NULL); */
+    /* printf("Joined client thread %d\n", clients_threads[i]);  */
+    pthread_join(clients[i].thread, NULL);
+    printf("Joined client thread %d\n", clients[i].thread);
+    printf("client mutex %d\n", clients[i].mutex);
   }
   
   
@@ -114,6 +127,13 @@ void runAcceptClients(int server_socket_fd){
 }
 
 int main(int argc, char *argv[]){
+
+  pthread_mutex_t mtx;
+  pthread_mutex_init(&mtx, NULL);
+  printf("mtx: %d\n", mtx);
+  printf("mtx: %d\n", mtx);
+  pthread_mutex_destroy(&mtx);
+
 
   int server_socket_fd=prepareServerSocket();
   
