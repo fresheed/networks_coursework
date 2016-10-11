@@ -33,7 +33,7 @@ void sendDataAndSleep(int socket_fd, char* msg){
   int num_bytes_send = send(socket_fd, msg, strlen(msg), send_flags);
   if (num_bytes_send < 0) 
     on_error("ERROR writing to socket");
-  sleep(1);
+  sleep(2);
 }
 
 int main(int argc, char* argv[]){
@@ -64,14 +64,16 @@ int main(int argc, char* argv[]){
   if (connect(client_socket_fd,(struct sockaddr *)&server_address, sizeof(server_address)) < 0) 
     on_error("ERROR connecting\n");
   
-  sendDataAndSleep(client_socket_fd, "a");
-  sendDataAndSleep(client_socket_fd, "bcd");
-
-  sendDataAndSleep(client_socket_fd, "ab");
-  sendDataAndSleep(client_socket_fd, "cd");
-
-  sendDataAndSleep(client_socket_fd, "abcda");
-  sendDataAndSleep(client_socket_fd, "bcd");
+  while(1){
+    sendDataAndSleep(client_socket_fd, "a");
+    sendDataAndSleep(client_socket_fd, "bcd");
+    
+    sendDataAndSleep(client_socket_fd, "ab");
+    sendDataAndSleep(client_socket_fd, "cd");
+    
+    sendDataAndSleep(client_socket_fd, "abcda");
+    sendDataAndSleep(client_socket_fd, "bcd");
+  }
 
   close(client_socket_fd);
   return 0;  

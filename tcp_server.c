@@ -79,21 +79,23 @@ void* processClient(void* arg){
 
 #define MAX_CLIENTS 3
 struct client_data clients[MAX_CLIENTS];
+pthread_mutex_t clients_mutex;
+int clients_count;
 void runAcceptClients(int server_socket_fd){
   /* int clients_fds[MAX_CLIENTS]; */
   /* pthread_t clients_threads[MAX_CLIENTS]; */
-  int cl=0;
-  while(cl<MAX_CLIENTS){
+  clients_count=0;
+  while(clients_count<MAX_CLIENTS){
     int tmp_fd=acceptClient(server_socket_fd);
     if (tmp_fd > 0){
-      /* clients_fds[cl]=tmp_fd; */
-      /* pthread_create(&(clients_threads[cl]), NULL, &processClient, &(clients_fds[cl])); */
-      clients[cl].socket_fd=tmp_fd;
-      pthread_mutex_init(&(clients[cl].mutex), NULL);
-      pthread_create(&(clients[cl].thread), NULL, &processClient, &(clients[cl].socket_fd));
+      pthread_mutex_lock(&clients_mutex);
+      sprintf(&clients[clients_count].name, "Client %d", clients_count);
+      clients[clients_count].socket_fd=tmp_fd;
+      pthread_create(&(clients[clients_count].thread), NULL, &processClient, &(clients[clients_count].socket_fd));
       threadLog();
       printf("Created client thread\n");
-      cl++;
+      clients_count++;
+      pthread_mutex_unlock(&clients_mutex);
     } else {
       threadLog();
       printf("Accept failed\n");
@@ -106,47 +108,74 @@ void runAcceptClients(int server_socket_fd){
   threadLog();
   printf("Closing client sockets...\n");
   int i;
-  for (i=0; i<cl; i++){
-    /* close(clients_fds[i]); */
-    pthread_mutex_lock(&(clients[i].mutex));
+  pthread_mutex_lock(&clients_mutex);
+  for (i=0; i<clients_count; i++){
     close(clients[i].socket_fd);
-    pthread_mutex_unlock(&(clients[i].mutex));
   }
+  
   threadLog();
   printf("Joining client threads...\n");
-  for (i=0; i<cl; i++){
-    /* pthread_join(clients_threads[i], NULL); */
-    /* printf("Joined client thread %d\n", clients_threads[i]);  */
+  for (i=0; i<clients_count; i++){
     pthread_join(clients[i].thread, NULL);
     printf("Joined client thread %d\n", clients[i].thread);
-    printf("client mutex %d\n", clients[i].mutex);
-  }
-  
-  
-    //}
+  } 
+  pthread_mutex_unlock(&clients_mutex);
 }
+
+void listClients(){
+  int i;
+  printf("Connected clients:\n");
+  pthread_mutex_lock(&clients_mutex);
+  for (i=0; i<clients_count; i++){
+    struct client_data client=clients[i];
+    printf("%s, socket: %d, thread: %d\n", client.name, client.socket_fd, client.thread );
+  }
+  pthread_mutex_unlock(&clients_mutex);
+}
+
+void kickClient(int id){
+
+  pthread_mutex_lock(&clients_mutex);
+  if (id >= clients_count){
+    printf("No such client\n");
+    return;
+  }
+  close(clients[id].socket_fd);
+  pthread_join(clients[id].thread, NULL);
+  printf("Kicked client %d\n", id);
+  pthread_mutex_unlock(&clients_mutex);
+}
+
+
 
 int main(int argc, char *argv[]){
 
-  pthread_mutex_t mtx;
-  pthread_mutex_init(&mtx, NULL);
-  printf("mtx: %d\n", mtx);
-  printf("mtx: %d\n", mtx);
-  pthread_mutex_destroy(&mtx);
-
-
   int server_socket_fd=prepareServerSocket();
   
+  pthread_mutex_init(&clients_mutex, NULL);
+
   pthread_t accept_thread;
   pthread_create(&accept_thread, NULL, &runAcceptClients, server_socket_fd);
 
   char admin_input[100];
   while (1){
     printf("\n=>");
-    scanf("%s", admin_input);
-    if (strcmp(admin_input, "q")==0){
+    //scanf("%s", admin_input);
+    fgets(admin_input, 100, stdin);
+    if (strncmp(admin_input, "q", 1)==0){
       printf("QUIT\n");
       break;
+    } else if (strncmp(admin_input, "l", 1)==0){
+      listClients();
+    } else if (strncmp(admin_input, "k ", 2)==0){
+      // format: k (id)
+      char id_raw=admin_input[2];
+      if (isdigit(id_raw)){
+	int id_to_kick=id_raw-'0';
+	kickClient(id_to_kick);
+      } else {
+	printf("Wrong format. Try k (id 0..9)\n");
+      }
     }
   }
   
@@ -157,6 +186,8 @@ int main(int argc, char *argv[]){
   printf("Joining accept thread\n");
   pthread_join(accept_thread, NULL);
   printf("Server stopped\n");
+
+  pthread_mutex_destroy(&clients_mutex);
 
   return 0;
 }
