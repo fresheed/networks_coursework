@@ -1,0 +1,2 @@
+* todo
+** use malloc-free instead of static arrays

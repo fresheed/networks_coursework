@@ -27,7 +27,6 @@ int prepareServerSocket(){
   }
 
   listen(server_socket_fd, 1); 
-  //listen(server_socket_fd, 0); 
 
   return server_socket_fd;
 }

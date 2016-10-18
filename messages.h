@@ -13,26 +13,49 @@
 #define TO_PROCESS 1
 #define TO_SEND 2
 #define WAITS_RESPONSE 3
-#define OWNED
+#define OWNED 4
+
+#define MESSAGES_SET_SIZE 10
 
 typedef struct message {
-  unsigned int id;
-  unsigned short source_type; 
-  unsigned short status_type;
-  unsigned int response_to;
-  unsigned short current_status;
-  unsigned int data_len;
-  char* data;
+unsigned int internal_id;
+unsigned short source_type; 
+unsigned short status_type;
+unsigned int response_to;
+unsigned short current_status;
+unsigned int data_len;
+char* data;
 } message;
 
 typedef struct messages_set {
-  unsigned int set_size;
-  unsigned int next_id;
-  message* messages;
-  unsigned int to_send, to_put, to_process;
-  pthread_mutex_t messages_mutex;
+unsigned int next_id;
+message messages[MESSAGES_SET_SIZE];
+unsigned int to_send, to_put, to_process;
+pthread_mutex_t messages_mutex;
+pthread_cond_t new_empty_slot, status_changed;
 } messages_set;
  
-
-
 #endif
+
+void createRequest(message* msg, unsigned int known_id, unsigned short source_type);
+
+void createResponse(message* msg, unsigned int known_id, unsigned short source_type, unsigned int response_to);
+
+void fillGeneral(message* msg, unsigned int known_id, unsigned short source_type);
+
+void addData(message* msg, char* data, unsigned int len);
+
+message* putMessageInSet(message message, messages_set* set, int new_status);
+
+message* lockNextMessage(messages_set* set, int cur_status);
+
+message* findMessageWithStatus(messages_set* set, int status);
+
+void updateMessageStatus(message* msg, messages_set* set, int new_status);
+
+void initMessagesSet(messages_set* set);
+
+void finalizeMessageSet(messages_set* set);
+
+void finalizeMessage();
+

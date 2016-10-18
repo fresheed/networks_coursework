@@ -47,6 +47,7 @@ void kickNode(nodes_info* nodes_params, int id){
 
   pthread_join(nodes[index].send_thread, NULL);
   pthread_join(nodes[index].recv_thread, NULL);
+  finalizeMessagesSet(&(nodes[index].set));
 
   nodes[index].id=0;
 
@@ -76,6 +77,7 @@ void finalizeNodes(nodes_info* nodes_params){
     if (nodes[i].id != 0){
       pthread_join(nodes[i].send_thread, NULL);
       pthread_join(nodes[i].recv_thread, NULL);
+      finalizeMessagesSet(&(nodes[i].set));
       nodes[i].id=0;
     }
   }
@@ -120,6 +122,9 @@ int getIndexById(node_data* nodes, int count, int id){
 void initNewNode(node_data* node, unsigned int id, unsigned int fd){
   node->id=id;
   node->socket_fd=fd;
+
+  initMessagesSet(&(node->set));
+  
   pthread_create(&(node->send_thread), NULL, 
 		 &node_send_thread, (void*)(node));
   pthread_create(&(node->recv_thread), NULL, 

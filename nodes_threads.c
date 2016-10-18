@@ -4,26 +4,38 @@
 #include <unistd.h>
 #include "primes_server.h"
 #include "nodes_threads.h"
+#include "messages.h"
 
 void* node_send_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr; 
+  int socket_fd=node->socket_fd;
+  messages_set* set=&(node->set);
+  const int send_flags=0;
   while(1){
-    break;
+    printf("waiting for message to send\n");
+    message* msg=lockNextMessage(set, TO_SEND); // msg now in OWNED state    
+    printf("found message\n");
+    send(socket_fd, "cba", strlen("cba"), send_flags);
+    updateMessageStatus(msg, set, EMPTY_SLOT);
+    printf("sent message\n");
   }
-  fflush(stdout);
-
   return NULL;
 }
 
 void* node_recv_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
+  messages_set* set=&(node->set);
   char buffer[100];
   while (1){
     if (!readN(node->socket_fd, buffer)){
       printf("Read from node %d failed\n", node->id);
       break;
     } else {
-      printf("Message from node %d: %s\n", node->id, buffer);
+      printf("creating REQUEST for message\n");
+      message msg;
+      createRequest(&msg, -1, INCOMING);
+      message* put_msg=putMessageInSet(msg, set, TO_PROCESS);
+      updateMessageStatus(put_msg, set, TO_SEND);
     }
   }
   printf("Stopped to receive from node %d\n", node->id);
