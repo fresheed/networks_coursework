@@ -18,21 +18,23 @@
 #define MESSAGES_SET_SIZE 10
 
 typedef struct message {
-unsigned int internal_id;
-unsigned short source_type; 
-unsigned short status_type;
-unsigned int response_to;
-unsigned short current_status;
-unsigned int data_len;
-char* data;
+  unsigned int internal_id;
+  unsigned short source_type; 
+  unsigned short status_type;
+  unsigned int response_to;
+  unsigned short current_status;
+  unsigned int data_len;
+  char* data;
 } message;
 
 typedef struct messages_set {
-unsigned int next_id;
-message messages[MESSAGES_SET_SIZE];
-unsigned int to_send, to_put, to_process;
-pthread_mutex_t messages_mutex;
-pthread_cond_t new_empty_slot, status_changed;
+  unsigned int next_id;
+  unsigned int is_active;
+  message messages[MESSAGES_SET_SIZE];
+  unsigned int to_send, to_put, to_process;
+  pthread_mutex_t messages_mutex;
+  //  pthread_cond_t new_empty_slot;
+  pthread_cond_t status_changed;
 } messages_set;
  
 #endif
@@ -54,6 +56,8 @@ message* findMessageWithStatus(messages_set* set, int status);
 void updateMessageStatus(message* msg, messages_set* set, int new_status);
 
 void initMessagesSet(messages_set* set);
+
+void markSetInactive(messages_set* set);
 
 void finalizeMessageSet(messages_set* set);
 

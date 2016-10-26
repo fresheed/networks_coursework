@@ -3,12 +3,13 @@
 
 #ifndef server_structs
 #define server_structs
+
 typedef struct node_data {
   unsigned int id;
-  pthread_t send_thread, recv_thread;
+  pthread_t send_thread, recv_thread, proc_thread;
   messages_set set;
   unsigned int socket_fd;
-  int test;
+  void* nodes_params;
 } node_data;
 
 typedef struct nodes_info {

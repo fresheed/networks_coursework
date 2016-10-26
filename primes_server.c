@@ -9,7 +9,7 @@
 #include "init_sockets.h"
 #include "nodes_processing.h"
 
-#include "nodes_threads.h"
+#include "server_threads.h"
 
 server_data server_params;
 #define MAX_NODES 2
@@ -55,6 +55,7 @@ void processAdminInput(){
 void* runAcceptNodes(){
   while(1){
     int tmp_fd=acceptClient(server_params.listen_socket_fd);
+    closeDisconnectedNodes(&nodes_params);
     if (tmp_fd > 0){
       addNewNode(&nodes_params, tmp_fd);
     } else {

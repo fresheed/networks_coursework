@@ -35,7 +35,6 @@ message* putMessageInSet(message msg, messages_set* set, int new_status){
   // message will be COPIED into set
   // returns pointer to message in set
   pthread_mutex_t* mutex=&(set->messages_mutex);
-  pthread_cond_t* was_cleaned=&(set->new_empty_slot);
   pthread_cond_t* was_changed=&(set->status_changed);
   
   pthread_mutex_lock(mutex);
@@ -45,8 +44,11 @@ message* putMessageInSet(message msg, messages_set* set, int new_status){
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, EMPTY_SLOT)) == NULL){
-    printf("waiting for clean signal\n");
-    pthread_cond_wait(was_cleaned, mutex);
+    pthread_cond_wait(was_changed, mutex);
+    if (!(set->is_active)){
+      pthread_mutex_unlock(mutex);
+      return NULL;
+    }
   }
 
   *slot_ptr=msg;
@@ -66,8 +68,11 @@ message* lockNextMessage(messages_set* set, int cur_status){
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
-    printf("waiting for change signal\n");
     pthread_cond_wait(was_changed, mutex);
+    if (!(set->is_active)){
+      pthread_mutex_unlock(mutex);
+      return NULL;
+    }
   }
 
   slot_ptr->current_status=OWNED;
@@ -93,7 +98,7 @@ message* findMessageWithStatus(messages_set* set, int status){
   pos=*init_pos;
   message* result=NULL;
   while (cnt<MESSAGES_SET_SIZE){
-    printf("checking %d\n", pos);
+    //printf("checking %d\n", pos);
     if (set->messages[pos].current_status == status){
       result=&((set->messages)[pos]);
       break;
@@ -101,10 +106,10 @@ message* findMessageWithStatus(messages_set* set, int status){
     pos=(++pos)%MESSAGES_SET_SIZE;
     cnt++;
   }
+  //printf("checked slots from %d, returning slot %d\n", *init_pos, pos);
   if (result != NULL){
     *init_pos=((*init_pos)+1)%MESSAGES_SET_SIZE;
   }
-  printf("returning slot %d\n", pos);
   return result;
 }
 
@@ -114,8 +119,6 @@ void updateMessageStatus(message* msg, messages_set* set, int new_status){
   pthread_mutex_lock(mutex);
   
   msg->current_status=new_status;
-
-  printf("Status of %d set to %d\n", msg, new_status);
 
   pthread_cond_broadcast(change);
   pthread_mutex_unlock(mutex);
@@ -134,8 +137,8 @@ void initMessagesSet(messages_set* set){
   set->to_put=0;
   set->to_process=0;
   set->to_send=0;
+  set->is_active=1;
   pthread_mutex_init(&(set->messages_mutex), NULL);
-  pthread_cond_init(&(set->new_empty_slot), NULL);
   pthread_cond_init(&(set->status_changed), NULL);
 }
 
@@ -146,8 +149,21 @@ void finalizeMessagesSet(messages_set* set){
     finalizeMessage(&(set->messages[i]));
   }
   pthread_mutex_destroy(&(set->messages_mutex));
-  pthread_cond_destroy(&(set->new_empty_slot));
   pthread_cond_destroy(&(set->status_changed));
+}
+
+void markSetInactive(messages_set* set){
+  printf("Marking as inactive..\n");
+  pthread_mutex_t* mutex=&(set->messages_mutex);
+  pthread_cond_t* change=&(set->status_changed);
+  pthread_mutex_lock(mutex);
+
+  set->is_active=0;
+  pthread_cond_broadcast(change);
+
+  pthread_mutex_unlock(mutex);
+  printf("Marked..\n");
+
 }
 
 void finalizeMessage(message* msg){
