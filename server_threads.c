@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #include "primes_server.h"
 #include "server_threads.h"
 #include "messages.h"
@@ -77,9 +78,30 @@ void* server_proc_thread(void* raw_node_ptr){
     message next_msg;
     createRequest(&next_msg, -1, INCOMING);
     message* put_msg=putMessageInSet(next_msg, set, TO_SEND);
+    sleep(1);
     updateMessageStatus(msg, set, EMPTY_SLOT);
   }
   printf("Stopped to process node %d\n", id);
+  return NULL;
+}
+
+void* node_proc_thread(void* raw_node_ptr){
+  node_data* node=(node_data*)raw_node_ptr;
+  messages_set* set=&(node->set);
+  int id=node->id;
+  while (1){
+    message* msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
+    if (msg == NULL){
+      printf("Message set is unactive, stopping to process\n");
+      break;
+    }
+    message next_msg;
+    createRequest(&next_msg, -1, INCOMING);
+    message* put_msg=putMessageInSet(next_msg, set, TO_SEND);
+    sleep(1);
+    updateMessageStatus(msg, set, EMPTY_SLOT);
+  }
+  printf("Stopped to process current node %d\n", id);
   return NULL;
 }
 
@@ -96,6 +118,12 @@ int readN(int socket_fd, char* read_buf){
     int to_read_now=message_len-total_read;
     int actual_read_now=recv(socket_fd, tmp_buf, to_read_now, recv_flags);
     if (actual_read_now < 0){
+      read_status=1;
+      printf("failed to read anything\n");
+      break;
+    } else if (actual_read_now == 0){
+      printf("peer has shut connection down\n");
+      shutdown(socket_fd, SHUT_RD);
       read_status=1;
       break;
     }
