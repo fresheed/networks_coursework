@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <sys/socket.h>
 #include "nodes_processing.h"
 #include "server_threads.h"
 
@@ -47,11 +48,14 @@ void kickNode(nodes_info* nodes_params, int id){
   }
   printf("node %d\n", index);
 
-  close(nodes[index].socket_fd);
+  shutdown(nodes[index].socket_fd, SHUT_WR);
 
   pthread_join(nodes[index].send_thread, NULL);
   pthread_join(nodes[index].recv_thread, NULL);
   pthread_join(nodes[index].proc_thread, NULL);
+
+  close(nodes[index].socket_fd);
+
   finalizeMessagesSet(&(nodes[index].set));
 
   nodes[index].id=0;
@@ -75,7 +79,8 @@ void finalizeNodes(nodes_info* nodes_params){
   printf("closing\n");
   for (i=0; i<max_nodes; i++){
     if (nodes[i].id != 0){
-      close(nodes[i].socket_fd);
+      shutdown(nodes[i].socket_fd, SHUT_WR);
+      printf("Closed socket for node %d\n", i);
     }
   }
 
@@ -89,10 +94,12 @@ void finalizeNodes(nodes_info* nodes_params){
       printf("join 2\n");
       pthread_join(nodes[i].proc_thread, NULL);
       printf("join 3\n");
+      close(nodes[i].socket_fd);
       finalizeMessagesSet(&(nodes[i].set));
       nodes[i].id=0;
     }
   }
+
   printf("finalized nodes\n");
   pthread_cond_signal(signal);
   pthread_mutex_unlock(&mutex);
