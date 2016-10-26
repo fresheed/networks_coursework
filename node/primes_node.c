@@ -3,9 +3,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include "primes_server.h"
-#include "primes_node.h"
-#include "server_threads.h"
+#include "server/primes_server.h"
+#include "node/primes_node.h"
+#include "general/common_threads.h"
+#include "node/node_threads.h"
 
 node_data node;
 
@@ -52,11 +53,11 @@ int initializeCurrentNode(int fd){
   initMessagesSet(&(node.set));
   
   pthread_create(&(node.send_thread), NULL,
-  		 &server_send_thread, (void*)(&node));
-  pthread_create(&(node.recv_thread), NULL,
-  		 &server_recv_thread, (void*)(&node));
+  		 &common_send_thread, (void*)(&node));
   pthread_create(&(node.proc_thread), NULL,
   		 &node_proc_thread, (void*)(&node));
+  pthread_create(&(node.recv_thread), NULL,
+  		 &common_recv_thread, (void*)(&node));
 
   printf("threads created\n");
 
@@ -67,16 +68,14 @@ void finalizeCurrentNode(){
   printf("started to finalize current node\n");
   int i;
 
-  close(node.socket_fd);
+  //close(node.socket_fd);
 
   printf("joining\n");
-  printf("join 0\n");
-  pthread_join(node.send_thread, NULL);
-  printf("join 1\n");
+  shutdown(node.socket_fd, SHUT_WR);
   pthread_join(node.recv_thread, NULL);
-  printf("join 2\n");
-  pthread_join(node.proc_thread, NULL);
-  printf("join 3\n");
+  /* pthread_join(node.send_thread, NULL); */
+  /* pthread_join(node.proc_thread, NULL); */
+  close(node.socket_fd);
   
   finalizeMessagesSet(&(node.set));
 

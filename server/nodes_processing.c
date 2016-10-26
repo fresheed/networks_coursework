@@ -1,8 +1,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/socket.h>
-#include "nodes_processing.h"
-#include "server_threads.h"
+#include "server/nodes_processing.h"
+#include "server/server_threads.h"
+#include "general/common_threads.h"
 
 
 void addNewNode(nodes_info* nodes_params, int new_socket_fd){
@@ -48,12 +49,12 @@ void kickNode(nodes_info* nodes_params, int id){
   }
   printf("node %d\n", index);
 
-  shutdown(nodes[index].socket_fd, SHUT_WR);
-
-  pthread_join(nodes[index].send_thread, NULL);
+  shutdown(nodes[index].socket_fd, SHUT_WR); // other side shuts down too and closes
   pthread_join(nodes[index].recv_thread, NULL);
-  pthread_join(nodes[index].proc_thread, NULL);
-
+  // following threads are joined in recv
+  /* pthread_join(nodes[index].send_thread, NULL); */
+  /* pthread_join(nodes[index].proc_thread, NULL); */
+  
   close(nodes[index].socket_fd);
 
   finalizeMessagesSet(&(nodes[index].set));
@@ -76,24 +77,19 @@ void finalizeNodes(nodes_info* nodes_params){
 
   pthread_mutex_lock(&mutex);
 
-  printf("closing\n");
   for (i=0; i<max_nodes; i++){
     if (nodes[i].id != 0){
       shutdown(nodes[i].socket_fd, SHUT_WR);
-      printf("Closed socket for node %d\n", i);
     }
   }
 
-  printf("joining\n");
   for (i=0; i<max_nodes; i++){
     if (nodes[i].id != 0){
-      printf("join 0\n");
-      pthread_join(nodes[i].send_thread, NULL);
-      printf("join 1\n");
+      printf("joining %d\n", nodes[i].id);
       pthread_join(nodes[i].recv_thread, NULL);
-      printf("join 2\n");
-      pthread_join(nodes[i].proc_thread, NULL);
-      printf("join 3\n");
+      // joined by recv
+      /* pthread_join(nodes[i].proc_thread, NULL); */
+      /* pthread_join(nodes[i].send_thread, NULL); */
       close(nodes[i].socket_fd);
       finalizeMessagesSet(&(nodes[i].set));
       nodes[i].id=0;
@@ -110,6 +106,8 @@ void closePendingConnections(nodes_info* nodes_params){
   pthread_mutex_t mutex=nodes_params->nodes_mutex;
 
   pthread_mutex_lock(&mutex);
+
+  if (nodes_params->pending_socket < 0) return;
 
   close(nodes_params->pending_socket);
   nodes_params->pending_socket=-1;
@@ -161,9 +159,9 @@ void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, uns
   node->nodes_params=(void*)nodes_params;
   
   pthread_create(&(node->send_thread), NULL, 
-		 &server_send_thread, (void*)(node));
-  pthread_create(&(node->recv_thread), NULL, 
-		 &server_recv_thread, (void*)(node));
+		 &common_send_thread, (void*)(node));
   pthread_create(&(node->proc_thread), NULL, 
 		 &server_proc_thread, (void*)(node));
+  pthread_create(&(node->recv_thread), NULL, 
+		 &common_recv_thread, (void*)(node));
 }

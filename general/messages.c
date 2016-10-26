@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "messages.h"
+#include "general/messages.h"
 
 void createRequest(message* msg, unsigned int known_id, unsigned short source_type){
   fillGeneral(msg, known_id, source_type);

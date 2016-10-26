@@ -5,9 +5,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
-#include "primes_server.h"
-#include "init_sockets.h"
-#include "nodes_processing.h"
+#include "server/primes_server.h"
+#include "general/init_sockets.h"
+#include "general/common_threads.h"
+#include "server/nodes_processing.h"
 
 #include "server_threads.h"
 
@@ -18,8 +19,9 @@ nodes_info nodes_params;
 
 int main(){
   if (!initializeServer()){
+    perror("sf\n");
     printf("Server initialization failed\n");
-    exit(1);
+    return 1;
   }
 
   processAdminInput();
@@ -81,22 +83,29 @@ int initializeServer(){
   pthread_cond_init(&nodes_params.nodes_refreshed, NULL);
 
   int listen_fd=prepareServerSocket();
+  if (listen_fd < 0){
+    return 0;
+  }
   server_params.listen_socket_fd=listen_fd;
   
   pthread_create(&server_params.accept_thread, NULL, &runAcceptNodes, NULL);
   
-  return (listen_fd > 0);
+  return 1;
 }
 
 void finalizeServer(){
   unsigned int server_socket_fd=server_params.listen_socket_fd;
-  printf("Closing server socket %d\n", server_socket_fd);
+  printf("Shutting down server socket %d\n", server_socket_fd);
   shutdown(server_socket_fd, SHUT_RDWR);
-  close(server_socket_fd);
+
   printf("Joining accept thread\n");
   closePendingConnections(&nodes_params);
   pthread_join(server_params.accept_thread, NULL);
   pthread_cond_destroy(&nodes_params.nodes_refreshed);
+
+  printf("Closing accept socket\n");
+  close(server_socket_fd);
+
   pthread_mutex_destroy(&nodes_params.nodes_mutex);
 }
 

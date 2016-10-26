@@ -1,4 +1,4 @@
-#include "primes_server.h"
+#include "server/primes_server.h"
 
 void addNewNode(nodes_info* nodes_params, int new_socket_fd);
 void closePendingConnections(nodes_info* nodes_params);

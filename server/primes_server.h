@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include "messages.h"
+#include "general/messages.h"
 
 #ifndef server_structs
 #define server_structs

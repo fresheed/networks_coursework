@@ -3,11 +3,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include "primes_server.h"
-#include "server_threads.h"
-#include "messages.h"
+#include "server/primes_server.h"
+#include "server/server_threads.h"
+#include "general/messages.h"
+#include "general/common_threads.h"
 
-void* server_send_thread(void* raw_node_ptr){
+void* common_send_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr; 
   nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
   int socket_fd=node->socket_fd;
@@ -36,7 +37,20 @@ void* server_send_thread(void* raw_node_ptr){
   return NULL;
 }
 
-void* server_recv_thread(void* raw_node_ptr){
+// should be executed from recv thread only
+void endCommunication(node_data* node){
+  printf("joining other\n");
+  pthread_join(node->proc_thread, NULL);
+  pthread_join(node->send_thread, NULL);
+  // at this point peer should sent shutdown already
+  printf("sd at recv\n");
+  shutdown(node->socket_fd, SHUT_WR);
+  printf("close at recv\n");
+  close(node->socket_fd);
+}
+
+
+void* common_recv_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
   nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
   messages_set* set=&(node->set);
@@ -61,49 +75,10 @@ void* server_recv_thread(void* raw_node_ptr){
     }
   }
   printf("Stopped to receive from node %d\n", id);
+  endCommunication(node);
   return NULL;
 }
 
-void* server_proc_thread(void* raw_node_ptr){
-  node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
-  messages_set* set=&(node->set);
-  int id=node->id;
-  while (1){
-    message* msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
-    if (msg == NULL){
-      printf("Message set is unactive, stopping to process\n");
-      break;
-    }
-    message next_msg;
-    createRequest(&next_msg, -1, INCOMING);
-    message* put_msg=putMessageInSet(next_msg, set, TO_SEND);
-    sleep(1);
-    updateMessageStatus(msg, set, EMPTY_SLOT);
-  }
-  printf("Stopped to process node %d\n", id);
-  return NULL;
-}
-
-void* node_proc_thread(void* raw_node_ptr){
-  node_data* node=(node_data*)raw_node_ptr;
-  messages_set* set=&(node->set);
-  int id=node->id;
-  while (1){
-    message* msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
-    if (msg == NULL){
-      printf("Message set is unactive, stopping to process\n");
-      break;
-    }
-    message next_msg;
-    createRequest(&next_msg, -1, INCOMING);
-    message* put_msg=putMessageInSet(next_msg, set, TO_SEND);
-    sleep(1);
-    updateMessageStatus(msg, set, EMPTY_SLOT);
-  }
-  printf("Stopped to process current node %d\n", id);
-  return NULL;
-}
 
 int readN(int socket_fd, char* read_buf){
   const int message_len=4;
@@ -123,7 +98,6 @@ int readN(int socket_fd, char* read_buf){
       break;
     } else if (actual_read_now == 0){
       printf("peer has shut connection down\n");
-      shutdown(socket_fd, SHUT_RD);
       read_status=1;
       break;
     }
@@ -132,4 +106,3 @@ int readN(int socket_fd, char* read_buf){
   }
   return read_status==0;
 }
-
