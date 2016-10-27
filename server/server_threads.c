@@ -28,8 +28,14 @@ void serverProcessMessage(message* msg, messages_set* set){
   if (msg->status_type == REQUEST) {
     if (msg->info_type == MAX_INFO) {
       message resp;
+      fillGeneral(&resp, -1);
       createMaxResponse(&resp, -1, msg->internal_id, 200); 
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
+    } else if (msg->info_type == RANGE_INFO) {
+      message resp;
+      int const_resp[]={7, 4, 3};
+      createRangeResponse(&resp, -1, msg->internal_id, const_resp, 3); 
+      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);            
     }
     updateMessageStatus(msg, set, EMPTY_SLOT);	
   }

@@ -42,6 +42,15 @@ typedef struct messages_set {
 
 void createRequest(message* msg, unsigned char known_id);
 void createResponse(message* msg, unsigned char known_id, unsigned char response_to);
+
+void createMaxRequest(message* msg, unsigned char known_id);
+void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value);
+void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
+void createRangeResponse(message* msg, unsigned char known_id, unsigned char response_to, int* primes, int primes_amount);
+
+int writeNumsToChars(int* nums, int amount, char* raw);
+int readNumsFromChars(char* raw, int* nums, int amount);
+
 void fillGeneral(message* msg, unsigned char known_id);
 void addData(message* msg, char* data, unsigned int len);
 message* putMessageInSet(message message, messages_set* set, char new_status, int generate_id);

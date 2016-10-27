@@ -6,6 +6,7 @@
 #include "server/primes_server.h"
 #include "node/primes_node.h"
 #include "general/common_threads.h"
+#include "general/messages.h"
 #include "node/node_threads.h"
 
 node_data node;
@@ -40,16 +41,24 @@ void processUserInput(){
     memset(user_input, 0, INPUT_MAX);
     printf("\n=>");    
     fgets(user_input, INPUT_MAX, stdin);
+    message msg;
+    fillGeneral(&msg, -1);
     if (strncmp(user_input, "q", 1)==0){
       printf("QUIT\n");
       break;
     } else if (strncmp(user_input, "rm", 2)==0){
       // request max prime
-      message msg;
       createMaxRequest(&msg, -1);
       message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
       printf("sending max prime request...\n");
-    }
+    } else if (strncmp(user_input, "rr", 2)==0){
+      // request range
+      int lower, upper;
+      sscanf(user_input, "rr %d %d", &lower, &upper);
+      createRangeRequest(&msg, -1, lower, upper);
+      message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
+      printf("sending range request for %d .. %d\n", lower, upper);
+    } 
 
   }
 }

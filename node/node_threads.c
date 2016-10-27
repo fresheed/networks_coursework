@@ -26,19 +26,31 @@ void* node_proc_thread(void* raw_node_ptr){
 
 void nodeProcessMessage(message* msg, messages_set* set){
   if (msg->status_type == RESPONSE) {
-    if (msg->info_type == MAX_INFO) {
       message* req=findMessageById(set, msg->response_to);
       if (req==NULL){
 	printf("request not found\n");
       } else {
-	int resp=msg->data_len;
-	printf("server response: %d\n", resp);
-	updateMessageStatus(req, set, EMPTY_SLOT);	
-	printf("freed req\n");
+	if (msg->info_type == MAX_INFO){
+	  //int resp=msg->data_len;
+	  int max_prime;
+	  readNumsFromChars(msg->data, &max_prime, 1);
+	  printf("Max prime: %d\n", max_prime);
+	} else if (msg->info_type == RANGE_INFO){
+	  //printf("primes are: %s\n", msg->data);
+	  int amount;
+	  int shift=readNumsFromChars(msg->data, &amount, 1);
+	  int recv_nums[200];
+	  readNumsFromChars(msg->data+shift, recv_nums, amount);
+	  printf("N primes: %d\n", amount);
+	  int i;
+	  for (i = 0; i<amount; i++) {
+	    printf("%d; ", recv_nums[i]);
+	  }
+	  printf("\n");
+	}
+	updateMessageStatus(req, set, EMPTY_SLOT);
       }
-    }
     updateMessageStatus(msg, set, EMPTY_SLOT);	
-    printf("freed req and resp\n");
   }
 }
 

@@ -23,11 +23,65 @@ void createMaxRequest(message* msg, unsigned char known_id){
 void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value){
   createResponse(msg, known_id, response_to);
   msg->info_type=MAX_INFO;
-  msg->data_len=value; // temp solution, should be passed via data  
+  //msg->data_len=value; // temp solution, should be passed via data  
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  int ivalue=value;
+  writeNumsToChars(&ivalue, 1, data_buffer);
+  addData(msg, data_buffer, strlen(data_buffer));
 }
+
+void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound){
+  createRequest(msg, known_id);
+  msg->info_type=RANGE_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  sprintf(data_buffer, "%d %d", lower_bound, upper_bound);
+  printf("Data : %s\n", data_buffer);
+  addData(msg, data_buffer, strlen(data_buffer));
+}
+
+void createRangeResponse(message* msg, unsigned char known_id, unsigned char response_to, int* primes, int primes_amount){
+  createResponse(msg, known_id, response_to);
+  msg->info_type=RANGE_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  char* write_ptr=data_buffer;
+
+  int appended=writeNumsToChars(&primes_amount, 1, write_ptr);
+  write_ptr+=appended;
+  appended=writeNumsToChars(primes, primes_amount, write_ptr);
+
+  addData(msg, data_buffer, strlen(data_buffer));
+}
+
+int writeNumsToChars(int* nums, int amount, char* raw){
+  int i;
+  int appended;
+  char* write_ptr=raw;
+  for (i=0; i<amount; i++){
+    appended=sprintf(write_ptr, "%d ", nums[i]);
+    write_ptr+=appended;
+  }
+  return (write_ptr-raw);
+}
+
+int readNumsFromChars(char* raw, int* nums, int amount){
+  int i;
+  int appended;
+  char* write_ptr=raw;
+  for (i=0; i<amount; i++){    
+    // %n to determine amount of bytes read
+    sscanf(write_ptr, "%d %n", &(nums[i]), &appended);
+    write_ptr+=appended;
+  }
+  return (write_ptr-raw);
+}
+
 
 void fillGeneral(message* msg, unsigned char known_id){
   msg->data=NULL;
+  msg->data_len=0;
   if (known_id >= 0){
     msg->internal_id=known_id;
   } else {
@@ -36,7 +90,8 @@ void fillGeneral(message* msg, unsigned char known_id){
 }
 
 void addData(message* msg, char* new_data, unsigned int len){
-  msg->data=(char*)malloc(len*sizeof(char));
+  msg->data=(char*)malloc((len+1)*sizeof(char));
+  memset(msg->data, 0, len+1);
   memcpy(msg->data, new_data, len);
   msg->data_len=len;
 }
@@ -145,6 +200,9 @@ void updateMessageStatus(message* msg, messages_set* set, char new_status){
   pthread_mutex_lock(mutex);
   
   msg->current_status=new_status;
+  if (new_status == EMPTY_SLOT) {
+    finalizeMessage(msg);
+  }
 
   pthread_cond_broadcast(change);
   pthread_mutex_unlock(mutex);
@@ -159,6 +217,7 @@ void initMessagesSet(messages_set* set){
   int i;
   for (i=0; i<MESSAGES_SET_SIZE; i++){
     (set->messages)[i].current_status=EMPTY_SLOT;
+    (set->messages)[i].data=NULL;
   }
   set->to_put=0;
   set->to_process=0;
@@ -168,10 +227,14 @@ void initMessagesSet(messages_set* set){
   pthread_cond_init(&(set->status_changed), NULL);
 }
 
+
 void printMessage(message* msg){
   printf("IntID: %d, ST: %d, IT: %d, RT: %d, CS: %d, DL: %d\n",
 	 msg->internal_id, msg->status_type, msg->info_type,
 	 msg->response_to, msg->current_status, msg->data_len);
+  if (msg->data != NULL){
+    printf("Addata: %s\n", msg->data);
+  }
 }
 
 void finalizeMessagesSet(messages_set* set){
@@ -199,6 +262,7 @@ void markSetInactive(messages_set* set){
 }
 
 void finalizeMessage(message* msg){
+  printMessage(msg);
   if (msg->data != NULL){
     free(msg->data);
     msg->data=NULL;

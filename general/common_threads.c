@@ -37,6 +37,7 @@ void* common_send_thread(void* raw_node_ptr){
 
 int sendMessageContent(message* msg, int socket_fd){
   char buf[200];
+  memset(buf, 0, 200);
   const int send_flags=0;
   int needed_len=5;
   buf[0]=msg->internal_id;
@@ -45,9 +46,15 @@ int sendMessageContent(message* msg, int socket_fd){
   buf[3]=msg->response_to;
   // current_status ignored!
   buf[4]=msg->data_len;
-  if (msg->data_len != 0){
-    perror("UNABLE TO ADD DATA\n");
+  if (msg->data != NULL){
+    memcpy(buf+5, msg->data, msg->data_len);
+    needed_len+=msg->data_len;
   }
+  if ((msg->data_len == 0) && (msg->data != NULL)){
+    printf("Strange msg send:\n");
+    printMessage(msg);
+  }
+
   int actual_sent=send(socket_fd, buf, needed_len, send_flags);
   return (actual_sent == needed_len);
 }
@@ -71,6 +78,7 @@ void* common_recv_thread(void* raw_node_ptr){
   int socket_fd=node->socket_fd;
   while (1){
     message msg;
+    fillGeneral(&msg, -1);
     int res=recvMessageContent(&msg, socket_fd);
     if (!res){
       printf("Read from node %d failed\n", id);
@@ -96,6 +104,7 @@ void* common_recv_thread(void* raw_node_ptr){
 
 int recvMessageContent(message* msg, int socket_fd){
   char buf[200];
+  memset(buf, 0, 200);
   // 1: read header of 5 bytes
   if (!readN(socket_fd, buf, 5)){
     printf("readN failed!\n");
@@ -108,7 +117,12 @@ int recvMessageContent(message* msg, int socket_fd){
   // current_status ignored!
   msg->data_len=buf[4];
   if (msg->data_len != 0){
-    perror("UNABLE TO READ DATA\n");
+    readN(socket_fd, buf+5, msg->data_len);
+    addData(msg, buf+5, msg->data_len);
+  }
+  if ((msg->data_len == 0) && (msg->data != NULL)){
+    printf("Strange msg recv:\n");
+    printMessage(msg);
   }
   // 2: read add data ...
   return 1;
