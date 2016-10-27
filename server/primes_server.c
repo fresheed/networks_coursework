@@ -9,13 +9,14 @@
 #include "general/init_sockets.h"
 #include "general/common_threads.h"
 #include "server/nodes_processing.h"
-
+#include "general/logic.h"
 #include "server_threads.h"
 
 server_data server_params;
 #define MAX_NODES 2
 node_data nodes[MAX_NODES];
 nodes_info nodes_params;
+primes_pool pool;
 
 int main(){
   if (!initializeServer()){
@@ -23,6 +24,7 @@ int main(){
     printf("Server initialization failed\n");
     return 1;
   }
+  initPool(&pool);
 
   processAdminInput();
   
@@ -50,6 +52,24 @@ void processAdminInput(){
       } else {
 	printf("Wrong format. Try k (id 0..9)\n");
       }
+    } else if (strncmp(admin_input, "st", 2)==0) {
+      printPoolStatus(&pool);
+    } else if (strncmp(admin_input, "ar", 2)==0) {
+      int lower, upper;
+      sscanf(admin_input, "ar %d %d", &lower, &upper);
+      primes_range tmp;
+      memset(tmp.numbers, 0, MAX_RANGE_SIZE);
+
+      tmp.lower_bound=lower;
+      tmp.upper_bound=upper;
+      int i, to_put=0;
+      for (i = lower; i < upper; i++) {
+	if (i % 3 == 0){
+	  tmp.numbers[to_put++]=i;
+	}
+      }
+      tmp.current_status=RANGE_COMPUTED;
+      putRangeInPool(tmp, &pool);
     }
   }
 }

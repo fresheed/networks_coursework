@@ -2,7 +2,7 @@
 
 rm primes_server
 echo Compiling server:
-gcc -I . server/primes_server.c server/nodes_processing.c server/server_threads.c general/messages.c general/init_sockets.c general/common_threads.c -o primes_server -pthread
+gcc -I . server/primes_server.c server/nodes_processing.c server/server_threads.c general/messages.c general/init_sockets.c general/common_threads.c general/logic.c -o primes_server -pthread
 
 rm primes_node
 echo Compiling node:
