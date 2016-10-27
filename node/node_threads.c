@@ -13,19 +13,34 @@ void* node_proc_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   int id=node->id;
   while (1){
-    message* msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
-    if (msg == NULL){
+    message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
+    if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
     }
-    message next_msg;
-    createRequest(&next_msg, -1, INCOMING);
-    message* put_msg=putMessageInSet(next_msg, set, TO_SEND);
-    sleep(1);
-    updateMessageStatus(msg, set, EMPTY_SLOT);
+    nodeProcessMessage(next_msg, set);
   }
   printf("Stopped to process node %d\n", id);
   return NULL;
 }
+
+void nodeProcessMessage(message* msg, messages_set* set){
+  if (msg->status_type == RESPONSE) {
+    if (msg->info_type == MAX_INFO) {
+      message* req=findMessageById(set, msg->response_to);
+      if (req==NULL){
+	printf("request not found\n");
+      } else {
+	int resp=msg->data_len;
+	printf("server response: %d\n", resp);
+	updateMessageStatus(req, set, EMPTY_SLOT);	
+	printf("freed req\n");
+      }
+    }
+    updateMessageStatus(msg, set, EMPTY_SLOT);	
+    printf("freed req and resp\n");
+  }
+}
+
 
 

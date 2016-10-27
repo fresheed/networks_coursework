@@ -37,12 +37,20 @@ void processUserInput(){
   const int INPUT_MAX=200;
   char user_input[INPUT_MAX];
   while(1){
+    memset(user_input, 0, INPUT_MAX);
     printf("\n=>");    
     fgets(user_input, INPUT_MAX, stdin);
     if (strncmp(user_input, "q", 1)==0){
       printf("QUIT\n");
       break;
+    } else if (strncmp(user_input, "rm", 2)==0){
+      // request max prime
+      message msg;
+      createMaxRequest(&msg, -1);
+      message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
+      printf("sending max prime request...\n");
     }
+
   }
 }
 

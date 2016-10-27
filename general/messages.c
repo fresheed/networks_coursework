@@ -4,24 +4,35 @@
 #include <stdio.h>
 #include "general/messages.h"
 
-void createRequest(message* msg, unsigned int known_id, unsigned short source_type){
-  fillGeneral(msg, known_id, source_type);
+void createRequest(message* msg, unsigned char known_id){
+  fillGeneral(msg, known_id);
+  msg->status_type=REQUEST;
 }
 
-void createResponse(message* msg, unsigned int known_id, unsigned short source_type, unsigned int response_to){
-  fillGeneral(msg, known_id, source_type);
+void createResponse(message* msg, unsigned char known_id, unsigned char response_to){
+  fillGeneral(msg, known_id);
+  msg->status_type=RESPONSE;
   msg->response_to=response_to;
 }
 
-void fillGeneral(message* msg, unsigned int known_id, unsigned short source_type){
+void createMaxRequest(message* msg, unsigned char known_id){
+  createRequest(msg, known_id);
+  msg->info_type=MAX_INFO;
+}
+
+void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value){
+  createResponse(msg, known_id, response_to);
+  msg->info_type=MAX_INFO;
+  msg->data_len=value; // temp solution, should be passed via data  
+}
+
+void fillGeneral(message* msg, unsigned char known_id){
   msg->data=NULL;
   if (known_id >= 0){
     msg->internal_id=known_id;
   } else {
     msg->internal_id=-1;
   }
-  msg->source_type=source_type;
-  msg->status_type=RESPONSE;
 }
 
 void addData(message* msg, char* new_data, unsigned int len){
@@ -31,15 +42,15 @@ void addData(message* msg, char* new_data, unsigned int len){
 }
 
 
-message* putMessageInSet(message msg, messages_set* set, int new_status){
+message* putMessageInSet(message msg, messages_set* set, char new_status, int generate_id){
   // message will be COPIED into set
   // returns pointer to message in set
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* was_changed=&(set->status_changed);
   
   pthread_mutex_lock(mutex);
-  if (msg.internal_id<0){
-    msg.internal_id=set->next_id++;
+  if (generate_id){
+    msg.internal_id=(set->next_id)++;
   }
 
   message* slot_ptr=NULL;
@@ -60,7 +71,7 @@ message* putMessageInSet(message msg, messages_set* set, int new_status){
   return slot_ptr;
 }
 
-message* lockNextMessage(messages_set* set, int cur_status){
+message* lockNextMessage(messages_set* set, char cur_status){
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* was_changed=&(set->status_changed);
   
@@ -83,7 +94,7 @@ message* lockNextMessage(messages_set* set, int cur_status){
 
 }
 
-message* findMessageWithStatus(messages_set* set, int status){
+message* findMessageWithStatus(messages_set* set, char status){
   int* init_pos, cnt, pos;
   
   switch(status){
@@ -113,7 +124,22 @@ message* findMessageWithStatus(messages_set* set, int status){
   return result;
 }
 
-void updateMessageStatus(message* msg, messages_set* set, int new_status){
+message* findMessageById(messages_set* set, char id){
+  pthread_mutex_t* mutex=&(set->messages_mutex);
+  pthread_mutex_lock(mutex);
+  
+  int i;
+  for (i=0; i<MESSAGES_SET_SIZE; i++){
+    if (set->messages[i].internal_id == id){
+      pthread_mutex_unlock(mutex);
+      return &(set->messages[i]);
+    }
+  }
+  pthread_mutex_unlock(mutex);
+  return NULL;
+}
+
+void updateMessageStatus(message* msg, messages_set* set, char new_status){
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* change=&(set->status_changed);
   pthread_mutex_lock(mutex);
@@ -140,6 +166,12 @@ void initMessagesSet(messages_set* set){
   set->is_active=1;
   pthread_mutex_init(&(set->messages_mutex), NULL);
   pthread_cond_init(&(set->status_changed), NULL);
+}
+
+void printMessage(message* msg){
+  printf("IntID: %d, ST: %d, IT: %d, RT: %d, CS: %d, DL: %d\n",
+	 msg->internal_id, msg->status_type, msg->info_type,
+	 msg->response_to, msg->current_status, msg->data_len);
 }
 
 void finalizeMessagesSet(messages_set* set){

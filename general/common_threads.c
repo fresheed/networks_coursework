@@ -13,7 +13,6 @@ void* common_send_thread(void* raw_node_ptr){
   nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
   int socket_fd=node->socket_fd;
   messages_set* set=&(node->set);
-  const int send_flags=0;
   int id=node->id;
   while(1){
     message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state    
@@ -21,31 +20,44 @@ void* common_send_thread(void* raw_node_ptr){
       printf("Message set is unactive, stopping to send\n");
       break;
     }
-    char* msg_text="cba";
-    int msg_len=strlen(msg_text);
-    int actual_sent=send(socket_fd, msg_text, msg_len, send_flags);
-    if (actual_sent != msg_len){
-      printf("Send to node %d failed, sent %d of %d\n", id, actual_sent, msg_len);
+    /* printf("Sending:\n"); */
+    /* printMessage(msg); */
+    if (!(sendMessageContent(msg, socket_fd))){
+      printf("Send to node %d failed", id);
       markSetInactive(set);
       break;      
     } else {
-      updateMessageStatus(msg, set, EMPTY_SLOT);
-      printf("sent message\n");    
+      char next_status=(msg->status_type == REQUEST) ? WAITS_RESPONSE : EMPTY_SLOT;
+      updateMessageStatus(msg, set, next_status);
     }
   }
   printf("Stopped to send to node %d\n", id);
   return NULL;
 }
 
+int sendMessageContent(message* msg, int socket_fd){
+  char buf[200];
+  const int send_flags=0;
+  int needed_len=5;
+  buf[0]=msg->internal_id;
+  buf[1]=msg->status_type;
+  buf[2]=msg->info_type;
+  buf[3]=msg->response_to;
+  // current_status ignored!
+  buf[4]=msg->data_len;
+  if (msg->data_len != 0){
+    perror("UNABLE TO ADD DATA\n");
+  }
+  int actual_sent=send(socket_fd, buf, needed_len, send_flags);
+  return (actual_sent == needed_len);
+}
+
 // should be executed from recv thread only
 void endCommunication(node_data* node){
-  printf("joining other\n");
   pthread_join(node->proc_thread, NULL);
   pthread_join(node->send_thread, NULL);
   // at this point peer should sent shutdown already
-  printf("sd at recv\n");
   shutdown(node->socket_fd, SHUT_WR);
-  printf("close at recv\n");
   close(node->socket_fd);
 }
 
@@ -56,17 +68,20 @@ void* common_recv_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   char buffer[100];
   int id=node->id;
+  int socket_fd=node->socket_fd;
   while (1){
-    printf("reading\n");
-    if (!readN(node->socket_fd, buffer)){
+    message msg;
+    int res=recvMessageContent(&msg, socket_fd);
+    if (!res){
       printf("Read from node %d failed\n", id);
       markSetInactive(set);
       break;
     } else {
-      printf("creating REQUEST for message\n");
-      message msg;
-      createRequest(&msg, -1, INCOMING);
-      message* put_msg=putMessageInSet(msg, set, TO_PROCESS);
+      /* printf("fetched:\n"); */
+      /* printMessage(&msg); */
+      message* put_msg=putMessageInSet(msg, set, TO_PROCESS, 0);
+      /* printf("Into process:\n"); */
+      /* printMessage(put_msg); */
       if (!set->is_active){
 	printf("Message set is unactive, stopping to receive\n");
 	break;
@@ -79,10 +94,30 @@ void* common_recv_thread(void* raw_node_ptr){
   return NULL;
 }
 
+int recvMessageContent(message* msg, int socket_fd){
+  char buf[200];
+  // 1: read header of 5 bytes
+  if (!readN(socket_fd, buf, 5)){
+    printf("readN failed!\n");
+    return 0;
+  }
+  msg->internal_id=buf[0];
+  msg->status_type=buf[1];
+  msg->info_type=buf[2];
+  msg->response_to=buf[3];
+  // current_status ignored!
+  msg->data_len=buf[4];
+  if (msg->data_len != 0){
+    perror("UNABLE TO READ DATA\n");
+  }
+  // 2: read add data ...
+  return 1;
+}
 
-int readN(int socket_fd, char* read_buf){
-  const int message_len=4;
-  char tmp_buf[message_len];
+
+int readN(int socket_fd, char* read_buf, int message_len){
+  //char tmp_buf[message_len];
+  char tmp_buf[200];
   const int recv_flags=0;
   int total_read=0;
 
@@ -101,8 +136,9 @@ int readN(int socket_fd, char* read_buf){
       read_status=1;
       break;
     }
+    //strcat(read_buf, tmp_buf);
+    memcpy( (read_buf+total_read), (tmp_buf), actual_read_now);
     total_read+=actual_read_now;
-    strcat(read_buf, tmp_buf);
   }
   return read_status==0;
 }
