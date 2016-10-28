@@ -1,8 +1,9 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#ifdef _WIN32
 
+#include "general/win_sockets.h"
 
-void setServerAddressParams(struct sockaddr_in* server_address, int port);
-int prepareServerSocket();
-int acceptClient(int server_socket_fd);
+#else
+
+#include "general/linux_sockets.h"
+
+#endif
