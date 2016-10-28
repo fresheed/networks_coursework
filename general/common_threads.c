@@ -2,20 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include "server/primes_server.h"
+#include "general/init_sockets.h"
 #include "server/server_threads.h"
 #include "general/messages.h"
 #include "general/common_threads.h"
 
 void* common_send_thread(void* raw_node_ptr){
-  node_data* node=(node_data*)raw_node_ptr; 
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
+  node_data* node=(node_data*)raw_node_ptr;
+  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   int socket_fd=node->socket_fd;
   messages_set* set=&(node->set);
   int id=node->id;
   while(1){
-    message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state    
+    message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state
     if (!set->is_active){
       printf("Message set is unactive, stopping to send\n");
       break;
@@ -25,7 +26,7 @@ void* common_send_thread(void* raw_node_ptr){
     if (!(sendMessageContent(msg, socket_fd))){
       printf("Send to node %d failed", id);
       markSetInactive(set);
-      break;      
+      break;
     } else {
       char next_status=(msg->status_type == REQUEST) ? WAITS_RESPONSE : EMPTY_SLOT;
       updateMessageStatus(msg, set, next_status);
@@ -64,14 +65,15 @@ void endCommunication(node_data* node){
   pthread_join(node->proc_thread, NULL);
   pthread_join(node->send_thread, NULL);
   // at this point peer should sent shutdown already
-  shutdown(node->socket_fd, SHUT_WR);
+  //shutdown(node->socket_fd, SHUT_WR);
+  shutdownWr(node->socket_fd);
   close(node->socket_fd);
 }
 
 
 void* common_recv_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
+  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   messages_set* set=&(node->set);
   char buffer[100];
   int id=node->id;
@@ -79,7 +81,9 @@ void* common_recv_thread(void* raw_node_ptr){
   while (1){
     message msg;
     fillGeneral(&msg, -1);
+    printf("listening...\n");
     int res=recvMessageContent(&msg, socket_fd);
+    printf("recv : %d\n", res);
     if (!res){
       printf("Read from node %d failed\n", id);
       markSetInactive(set);
@@ -120,6 +124,8 @@ int recvMessageContent(message* msg, int socket_fd){
     readN(socket_fd, buf+5, msg->data_len);
     addData(msg, buf+5, msg->data_len);
   }
+  printf("got message\n");
+  printMessage(msg);
   if ((msg->data_len == 0) && (msg->data != NULL)){
     printf("Strange msg recv:\n");
     printMessage(msg);
@@ -153,6 +159,13 @@ int readN(int socket_fd, char* read_buf, int message_len){
     //strcat(read_buf, tmp_buf);
     memcpy( (read_buf+total_read), (tmp_buf), actual_read_now);
     total_read+=actual_read_now;
+  }
+  int i;
+  printf("Tqotal read: %d\n", total_read);
+  for (i=0; i<total_read; i++){
+    int tmp;
+    tmp=read_buf[i];
+    printf("_%d", tmp);
   }
   return read_status==0;
 }

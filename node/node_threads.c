@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include "server/primes_server.h"
 #include "node/node_threads.h"
 #include "general/messages.h"
@@ -10,11 +9,11 @@
 
 void* node_proc_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params; 
+  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   messages_set* set=&(node->set);
   int id=node->id;
   while (1){
-    message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
+    message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
@@ -61,12 +60,13 @@ void nodeProcessMessage(message* msg, messages_set* set){
       }
       updateMessageStatus(req, set, EMPTY_SLOT);
     }
-    updateMessageStatus(msg, set, EMPTY_SLOT);	
+    updateMessageStatus(msg, set, EMPTY_SLOT);
   } else {
     if (msg->info_type == COMPUTE_INFO){
+        printf("Processing\n");
       int primes[MAX_RANGE_SIZE];
       int bounds[2];
-      readNumsFromChars(msg->data, bounds, 2);  
+      readNumsFromChars(msg->data, bounds, 2);
       primes_range range;
       memset(range.numbers, 0, MAX_RANGE_SIZE);
       range.lower_bound=bounds[0];
@@ -75,8 +75,9 @@ void nodeProcessMessage(message* msg, messages_set* set){
       computePrimesInRange(&range);
       message resp;
       fillGeneral(&resp, -1);
-      createComputeResponse(&resp, -1, msg->internal_id, range);       
-      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);      
+      createComputeResponse(&resp, -1, msg->internal_id, range);
+      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
+        printf("Processed\n");
     }
   }
 }

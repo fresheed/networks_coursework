@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include "server/primes_server.h"
 #include "server/server_threads.h"
 #include "general/messages.h"
@@ -13,7 +12,7 @@ void* server_proc_thread(void* raw_node_ptr){
   primes_pool* pool=node->common_pool;
   int id=node->id;
   while (1){
-    message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state        
+    message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
@@ -30,23 +29,23 @@ void serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
       message resp;
       fillGeneral(&resp, -1);
       int max=getCurrentMaxPrime(pool);
-      createMaxResponse(&resp, -1, msg->internal_id, max); 
+      createMaxResponse(&resp, -1, msg->internal_id, max);
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
     } else if (msg->info_type == RANGE_INFO) {
       message resp;
       int const_resp[]={7, 4, 3};
-      createRangeResponse(&resp, -1, msg->internal_id, const_resp, 3); 
-      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);            
+      createRangeResponse(&resp, -1, msg->internal_id, const_resp, 3);
+      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
     } else if (msg->info_type == RECENT_INFO) {
       int amount;
       int shift=readNumsFromChars(msg->data, &amount, 1);
       message resp;
       int recent_primes[MAX_RANGE_SIZE];
       getRecentPrimes(amount, pool, recent_primes);
-      createRecentResponse(&resp, -1, msg->internal_id, recent_primes, amount); 
-      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);            
+      createRecentResponse(&resp, -1, msg->internal_id, recent_primes, amount);
+      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
     }
-    updateMessageStatus(msg, set, EMPTY_SLOT);	
+    updateMessageStatus(msg, set, EMPTY_SLOT);
   } else {
     if (msg->info_type == COMPUTE_INFO) {
       // process response for range computation

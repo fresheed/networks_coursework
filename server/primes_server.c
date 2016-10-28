@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <pthread.h>
 #include "server/primes_server.h"
 #include "general/init_sockets.h"
@@ -26,8 +25,8 @@ int main(){
   initPool(&pool);
 
   processAdminInput();
-  
-  finalizeServer();  
+
+  finalizeServer();
   printf("Server stopped\n");
 
   return 0;
@@ -38,7 +37,7 @@ void processAdminInput(){
   char admin_input[INPUT_MAX];
   while(1){
     printf("\n=>");
-    
+
     fgets(admin_input, INPUT_MAX, stdin);
     if (strncmp(admin_input, "q", 1)==0){
       printf("QUIT\n");
@@ -95,7 +94,7 @@ void* runAcceptNodes(){
       break;
     }
   }
-  
+
   finalizeNodes(&nodes_params);
 
   return NULL;
@@ -117,11 +116,11 @@ int initializeServer(){
     return 0;
   }
   server_params.listen_socket_fd=listen_fd;
-  
+
   pthread_create(&server_params.accept_thread, NULL, &runAcceptNodes, NULL);
 
   server_params.last_executor=0;
-  
+
   return 1;
 }
 

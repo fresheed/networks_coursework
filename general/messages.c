@@ -23,7 +23,7 @@ void createMaxRequest(message* msg, unsigned char known_id){
 void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value){
   createResponse(msg, known_id, response_to);
   msg->info_type=MAX_INFO;
-  //msg->data_len=value; // temp solution, should be passed via data  
+  //msg->data_len=value; // temp solution, should be passed via data
   char data_buffer[200];
   memset(data_buffer, 0, 200);
   int ivalue=value;
@@ -132,7 +132,7 @@ int readNumsFromChars(char* raw, int* nums, int amount){
   int i;
   int appended;
   char* write_ptr=raw;
-  for (i=0; i<amount; i++){    
+  for (i=0; i<amount; i++){
     // %n to determine amount of bytes read
     sscanf(write_ptr, "%d %n", &(nums[i]), &appended);
     write_ptr+=appended;
@@ -164,7 +164,7 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
   // returns pointer to message in set
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* was_changed=&(set->status_changed);
-  
+
   pthread_mutex_lock(mutex);
   if (generate_id){
     msg.internal_id=(set->next_id)++;
@@ -184,14 +184,14 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
   pthread_cond_broadcast(was_changed);
 
   pthread_mutex_unlock(mutex);
-
+  printf("put\n");
   return slot_ptr;
 }
 
 message* lockNextMessage(messages_set* set, char cur_status){
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* was_changed=&(set->status_changed);
-  
+
   pthread_mutex_lock(mutex);
 
   message* slot_ptr=NULL;
@@ -213,14 +213,14 @@ message* lockNextMessage(messages_set* set, char cur_status){
 
 message* findMessageWithStatus(messages_set* set, char status){
   int* init_pos, cnt, pos;
-  
+
   switch(status){
   case EMPTY_SLOT:
     init_pos=&(set->to_put); break;
   case TO_PROCESS:
     init_pos=&(set->to_process); break;
   case TO_SEND:
-    init_pos=&(set->to_send); break;    
+    init_pos=&(set->to_send); break;
   }
   cnt=0;
   pos=*init_pos;
@@ -244,7 +244,7 @@ message* findMessageWithStatus(messages_set* set, char status){
 message* findMessageById(messages_set* set, char id){
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_mutex_lock(mutex);
-  
+
   int i;
   for (i=0; i<MESSAGES_SET_SIZE; i++){
     if (set->messages[i].internal_id == id){
@@ -260,7 +260,7 @@ void updateMessageStatus(message* msg, messages_set* set, char new_status){
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* change=&(set->status_changed);
   pthread_mutex_lock(mutex);
-  
+
   msg->current_status=new_status;
   if (new_status == EMPTY_SLOT) {
     finalizeMessage(msg);
@@ -271,7 +271,7 @@ void updateMessageStatus(message* msg, messages_set* set, char new_status){
 }
 
 /* void changeStatus(, messages_set* set){ */
-  
+
 
 /* } */
 
