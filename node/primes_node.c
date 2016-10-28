@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include "server/primes_server.h"
 #include "node/primes_node.h"
 #include "general/common_threads.h"
@@ -106,7 +106,9 @@ void finalizeCurrentNode(){
   //close(node.socket_fd);
 
   printf("joining\n");
-  shutdown(node.socket_fd, SHUT_WR);
+  //shutdown(node.socket_fd, SHUT_WR);
+  shutdownWr(node.socket_fd);
+
   pthread_join(node.recv_thread, NULL);
   /* pthread_join(node.send_thread, NULL); */
   /* pthread_join(node.proc_thread, NULL); */

@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include "server/primes_server.h"
@@ -129,7 +128,8 @@ int initializeServer(){
 void finalizeServer(){
   unsigned int server_socket_fd=server_params.listen_socket_fd;
   printf("Shutting down server socket %d\n", server_socket_fd);
-  shutdown(server_socket_fd, SHUT_RDWR);
+  //shutdown(server_socket_fd, SHUT_RDWR);
+  shutdownRdWr(server_socket_fd);
 
   printf("Joining accept thread\n");
   closePendingConnections(&nodes_params);

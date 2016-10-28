@@ -1,10 +1,9 @@
 #include <pthread.h>
 #include <stdio.h>
-#include <sys/socket.h>
 #include "server/nodes_processing.h"
 #include "server/server_threads.h"
 #include "general/common_threads.h"
-
+#include "general/init_sockets.h"
 
 void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
   node_data* nodes=nodes_params->nodes;
@@ -78,7 +77,9 @@ void kickNode(nodes_info* nodes_params, int id){
     return; // no node found, maybe it has been already closed
   }
 
-  shutdown(nodes[index].socket_fd, SHUT_WR); // other side shuts down too and closes
+  //shutdown(nodes[index].socket_fd, SHUT_WR); // other side shuts down too and closes
+  shutdownWr(nodes[index].socket_fd);
+
   pthread_join(nodes[index].recv_thread, NULL);
   // following threads are joined in recv
   /* pthread_join(nodes[index].send_thread, NULL); */
@@ -108,7 +109,8 @@ void finalizeNodes(nodes_info* nodes_params){
 
   for (i=0; i<max_nodes; i++){
     if (nodes[i].id != 0){
-      shutdown(nodes[i].socket_fd, SHUT_WR);
+      //shutdown(nodes[i].socket_fd, SHUT_WR);
+      shutdownWr(nodes[i].socket_fd);
     }
   }
 

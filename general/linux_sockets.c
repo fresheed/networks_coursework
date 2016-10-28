@@ -79,3 +79,10 @@ int connectToServer(char* hostname, int port){
 }
 
 
+void shutdownWr(int socket_fd){
+  shutdown(socket_fd, SHUT_WR);
+}
+
+void shutdownRdWr(int socket_fd){
+  shutdown(socket_fd, SHUT_RDWR);
+}
