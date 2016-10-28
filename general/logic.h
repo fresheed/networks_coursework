@@ -17,6 +17,7 @@ typedef struct primes_range {
 
 typedef struct primes_pool {
   primes_range* first_range;
+  unsigned int recent[MAX_RANGE_SIZE];
   pthread_mutex_t mutex;
 } primes_pool;
 
@@ -30,7 +31,11 @@ int checkRange(primes_range* to_put, primes_range* prev);
 void printPoolStatus(primes_pool* pool);
 void printRangeStatus(primes_range* range);
 
-/* void computeInRange(primes_range* range); */
+void getRecentPrimes(int amount, primes_pool* pool, int* res);
+void updateRecent(primes_pool* pool, primes_range* range);
 
-/* int getCurrentMaxPrime(primes_pool* pool); */
+
+void computePrimesInRange(primes_range* range);
+
+int getCurrentMaxPrime(primes_pool* pool);
 

@@ -1,7 +1,8 @@
-#include "general/logic.h" 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#include "general/logic.h" 
 
 
 void initPool(primes_pool* pool){
@@ -19,6 +20,8 @@ void initPool(primes_pool* pool){
   *new_range=first;
   new_range->next_range=NULL;
   pool->first_range=new_range;
+
+  memset(pool->recent, 0, MAX_RANGE_SIZE);
 
   pthread_mutex_init(&pool->mutex, NULL);
 }
@@ -62,6 +65,8 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
 
   printf("Added range:\n");
   printRangeStatus(new_range);
+
+  updateRecent(pool, new_range);
   
   pthread_mutex_unlock(&(pool->mutex));  
 }
@@ -112,6 +117,18 @@ int checkRange(primes_range* to_put, primes_range* prev){
   return 0;
 }
 
+int validateRangeParams(int lower, int upper){
+  if (lower <= 0 || upper <= 0){
+    return 0;
+  }
+  if (lower >= upper) {
+    return 0;
+  }
+  if (upper-lower > MAX_RANGE_SIZE){
+    return 0;
+  }
+  return 1;
+}
   
 
 
@@ -153,7 +170,77 @@ void printRangeStatus(primes_range* range){
   printf("\n");
 }
 
+void computePrimesInRange(primes_range* range){
+  int pos=0;
+  int num;
+  int divisor;
+  int is_prime;
+  for (num = range->lower_bound; num<=range->upper_bound; num++) {
+    if (num % 2 == 0) continue;
+    is_prime=1;
+    int max_divisor=(int)sqrt(num) + 1;
+    for (divisor=3; divisor<=max_divisor; divisor+=2) {
+      if (num % divisor == 0) {
+	is_prime=0;
+	break;
+      }
+    }
+    if (is_prime){
+      range->numbers[pos++]=num;
+    }
+  }
+  range->current_status=RANGE_COMPUTED;
+}
 
-/* void computeInRange(primes_range* range); */
-/* int getCurrentMaxPrime(primes_pool* pool); */
+void getRecentPrimes(int amount, primes_pool* pool, int* res){
+  pthread_mutex_lock(&(pool->mutex));
+  int i;
+  for (i = 0; i<amount; i++) {
+    res[i]=pool->recent[i];
+  }
+  pthread_mutex_unlock(&(pool->mutex));
+}
+
+void updateRecent(primes_pool* pool, primes_range* range){
+  int new_len=getPrimesCountInRange(range);
+  int kept=MAX_RANGE_SIZE-new_len;
+  int i;
+  for (i = kept-1; i>=0; i--) {
+    pool->recent[i+new_len]=pool->recent[i];
+  }
+  for (i=0; i<new_len; i++) {
+    pool->recent[i]=range->numbers[i];
+  }
+}
+
+void setRangeNumbers(primes_range* range, int* numbers, int len){
+  int i;
+  for (i = 0; i<len; i++) {
+    range->numbers[i]=numbers[i];
+  }
+  range->current_status=RANGE_COMPUTED;
+}
+
+int getPrimesCountInRange(primes_range* range){
+  int i;
+  for (i = 0; i<MAX_RANGE_SIZE; i++) {
+    if (range->numbers[i] == 0){
+      return i;
+    }
+  }
+  return MAX_RANGE_SIZE;
+}
+
+int getCurrentMaxPrime(primes_pool* pool){
+  pthread_mutex_lock(&(pool->mutex));
+  primes_range* range=pool->first_range;
+  while (range->next_range != NULL){
+    range=range->next_range;
+  }
+  // now it points to last range
+  int total_in_range=getPrimesCountInRange(range);
+  int max=range->numbers[total_in_range-1];
+  pthread_mutex_unlock(&(pool->mutex));
+  return max;
+}
 

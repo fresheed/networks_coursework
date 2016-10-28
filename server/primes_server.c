@@ -54,22 +54,33 @@ void processAdminInput(){
       }
     } else if (strncmp(admin_input, "st", 2)==0) {
       printPoolStatus(&pool);
-    } else if (strncmp(admin_input, "ar", 2)==0) {
+    } else if (strncmp(admin_input, "cr", 2)==0) {
       int lower, upper;
-      sscanf(admin_input, "ar %d %d", &lower, &upper);
-      primes_range tmp;
-      memset(tmp.numbers, 0, MAX_RANGE_SIZE);
-
-      tmp.lower_bound=lower;
-      tmp.upper_bound=upper;
-      int i, to_put=0;
-      for (i = lower; i < upper; i++) {
-	if (i % 3 == 0){
-	  tmp.numbers[to_put++]=i;
-	}
+      sscanf(admin_input, "cr %d %d", &lower, &upper);
+      if (!validateRangeParams(lower, upper)){
+	printf("Given range cannot be computed\n");
+	continue;
       }
-      tmp.current_status=RANGE_COMPUTED;
-      putRangeInPool(tmp, &pool);
+      int used_executor=assignTaskToNextNode(server_params.last_executor,
+					     lower, upper, &nodes_params);
+      if (used_executor < 0){
+	printf("No executor available now, please try later\n");
+      } else {
+	printf("Assigned task to node %d\n", used_executor);
+	server_params.last_executor=used_executor;
+      }
+      /* primes_range tmp; */
+      /* memset(tmp.numbers, 0, MAX_RANGE_SIZE); */
+      /* tmp.lower_bound=lower; */
+      /* tmp.upper_bound=upper; */
+      /* int i, to_put=0; */
+      /* for (i = lower; i < upper; i++) { */
+      /* 	if (i % 3 == 0){ */
+      /* 	  tmp.numbers[to_put++]=i; */
+      /* 	} */
+      /* } */
+      /* tmp.current_status=RANGE_COMPUTED; */
+      /* putRangeInPool(tmp, &pool); */
     }
   }
 }
@@ -79,7 +90,7 @@ void* runAcceptNodes(){
     int tmp_fd=acceptClient(server_params.listen_socket_fd);
     closeDisconnectedNodes(&nodes_params);
     if (tmp_fd > 0){
-      addNewNode(&nodes_params, tmp_fd);
+      addNewNode(&nodes_params, tmp_fd, &pool);
     } else {
       printf("Accept failed\n");
       break;
@@ -109,6 +120,8 @@ int initializeServer(){
   server_params.listen_socket_fd=listen_fd;
   
   pthread_create(&server_params.accept_thread, NULL, &runAcceptNodes, NULL);
+
+  server_params.last_executor=0;
   
   return 1;
 }
@@ -125,6 +138,8 @@ void finalizeServer(){
 
   printf("Closing accept socket\n");
   close(server_socket_fd);
+
+  destroyPool(&pool);
 
   pthread_mutex_destroy(&nodes_params.nodes_mutex);
 }

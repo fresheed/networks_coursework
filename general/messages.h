@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include "general/logic.h"
 
 #ifndef messages_h
 #define messages_h
@@ -8,7 +9,8 @@
 
 #define MAX_INFO 10
 #define RANGE_INFO 1
-#define COMP_INFO 2
+#define COMPUTE_INFO 2
+#define RECENT_INFO 3
 
 #define EMPTY_SLOT 10
 #define TO_PROCESS 1
@@ -19,23 +21,23 @@
 #define MESSAGES_SET_SIZE 10
 
 typedef struct message {
-  char internal_id;
-  char status_type;
-  char info_type;
-  char response_to;
-  char current_status;
-  char data_len;
-  char* data;
+char internal_id;
+char status_type;
+char info_type;
+char response_to;
+char current_status;
+unsigned char data_len;
+char* data;
 } message;
 
 typedef struct messages_set {
-  char next_id;
-  unsigned int is_active;
-  message messages[MESSAGES_SET_SIZE];
-  unsigned int to_send, to_put, to_process;
-  pthread_mutex_t messages_mutex;
-  //  pthread_cond_t new_empty_slot;
-  pthread_cond_t status_changed;
+char next_id;
+unsigned int is_active;
+message messages[MESSAGES_SET_SIZE];
+unsigned int to_send, to_put, to_process;
+pthread_mutex_t messages_mutex;
+//  pthread_cond_t new_empty_slot;
+pthread_cond_t status_changed;
 } messages_set;
  
 #endif
@@ -47,6 +49,10 @@ void createMaxRequest(message* msg, unsigned char known_id);
 void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value);
 void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
 void createRangeResponse(message* msg, unsigned char known_id, unsigned char response_to, int* primes, int primes_amount);
+void createComputeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
+void createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range range);
+void createRecentRequest(message* msg, unsigned char known_id, int amount);
+void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount); 
 
 int writeNumsToChars(int* nums, int amount, char* raw);
 int readNumsFromChars(char* raw, int* nums, int amount);

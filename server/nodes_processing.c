@@ -6,7 +6,7 @@
 #include "general/common_threads.h"
 
 
-void addNewNode(nodes_info* nodes_params, int new_socket_fd){
+void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
   node_data* nodes=nodes_params->nodes;
   pthread_mutex_t mutex=nodes_params->nodes_mutex;
   pthread_cond_t* signal=&(nodes_params->nodes_refreshed);
@@ -25,7 +25,8 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd){
   printf("Got slot %d\n", slot_ind);
 
   initNewNode(&(nodes[slot_ind]), nodes_params,
-	      nodes_params->unique_id_counter++, nodes_params->pending_socket);
+	      nodes_params->unique_id_counter++, 
+	      nodes_params->pending_socket, pool);
   printf("Node %d: id=%d\n", slot_ind, nodes[slot_ind].id);
 
   nodes_params->pending_socket=-1;
@@ -33,21 +34,49 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd){
   pthread_mutex_unlock(&mutex);
 }
 
+int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned int upper_bound, nodes_info* nodes_params){
+  node_data* nodes=nodes_params->nodes;
+  int max_nodes=nodes_params->max_nodes;
+  pthread_mutex_t mutex=nodes_params->nodes_mutex;
+
+  pthread_mutex_lock(&mutex);
+
+  int index=last_executor, count=0;
+  int id;
+  while (count<max_nodes){
+    printf("check for index %d: %d\n", index, nodes[index].id);
+    if (nodes[index].id>0){ // node is active
+      //id=nodes[index].id;
+      break;
+    }
+    index=(index+1) % max_nodes;
+    count++;
+  }  
+  if (count == max_nodes){
+    return -1; 
+  } else {    
+    message msg;
+    fillGeneral(&msg, -1);
+    createComputeRequest(&msg, -1, lower_bound, upper_bound);
+    message* put_msg=putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
+  }
+
+  pthread_mutex_unlock(&mutex);
+  return (index+1) % max_nodes; // next time start from next executor
+}
+
 void kickNode(nodes_info* nodes_params, int id){
-  printf("Kick entered\n");
   node_data* nodes=nodes_params->nodes;
   pthread_cond_t* signal=&(nodes_params->nodes_refreshed);
   int max_nodes=nodes_params->max_nodes;
   pthread_mutex_t mutex=nodes_params->nodes_mutex;
 
   pthread_mutex_lock(&mutex);
-  printf("Kick lock\n");
   int index=getIndexById(nodes, max_nodes, id);
   if (index == -1){
     printf("node not found\n");
     return; // no node found, maybe it has been already closed
   }
-  printf("node %d\n", index);
 
   shutdown(nodes[index].socket_fd, SHUT_WR); // other side shuts down too and closes
   pthread_join(nodes[index].recv_thread, NULL);
@@ -150,13 +179,14 @@ int getIndexById(node_data* nodes, int count, int id){
   return -1;
 }
 
-void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, unsigned int fd){
+void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, unsigned int fd, primes_pool* pool){
   node->id=id;
   node->socket_fd=fd;
 
   initMessagesSet(&(node->set));
   
   node->nodes_params=(void*)nodes_params;
+  node->common_pool=pool;
   
   pthread_create(&(node->send_thread), NULL, 
 		 &common_send_thread, (void*)(node));

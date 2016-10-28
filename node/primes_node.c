@@ -11,9 +11,16 @@
 
 node_data node;
 
-int main(){
-  const char* hostname="localhost";
-  const int port=3451;
+int main(int argc, char* argv[]){
+  char* hostname="localhost";
+  int port=3451;
+  if (argc>1){
+    hostname=argv[1];
+    if (argc>2){
+      sscanf(argv[2], "%d", &port);
+    }
+  }
+  printf("Trying to connect %s:%d\n", hostname, port);
 
   int socket_fd=connectToServer(hostname, port);
   printf("got %d\n", socket_fd);
@@ -58,6 +65,17 @@ void processUserInput(){
       createRangeRequest(&msg, -1, lower, upper);
       message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
       printf("sending range request for %d .. %d\n", lower, upper);
+    } else if (strncmp(user_input, "l ", 2)==0){
+      // request last N primes
+      int to_show;
+      sscanf(user_input, "l %d", &to_show);
+      if (to_show > 50){
+	printf("Only last 50 primes supported\n");
+	continue;
+      }
+      createRecentRequest(&msg, -1, to_show);
+      message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
+      printf("sending recent %d request\n", to_show);
     } 
 
   }

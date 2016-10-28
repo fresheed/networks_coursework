@@ -55,6 +55,64 @@ void createRangeResponse(message* msg, unsigned char known_id, unsigned char res
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
+void createComputeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound){
+  createRequest(msg, known_id);
+  msg->info_type=COMPUTE_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  sprintf(data_buffer, "%d %d", lower_bound, upper_bound);
+  addData(msg, data_buffer, strlen(data_buffer));
+}
+
+void createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range range){
+  createResponse(msg, known_id, response_to);
+  msg->info_type=COMPUTE_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  char* write_ptr=data_buffer;
+
+  int primes_amount=getPrimesCountInRange(&range);
+  int appended=writeNumsToChars(&primes_amount, 1, write_ptr);
+  write_ptr+=appended;
+  int header[]={range.lower_bound, range.upper_bound};
+  appended=writeNumsToChars(header, 2, write_ptr);
+  write_ptr+=appended;
+  appended=writeNumsToChars(range.numbers, primes_amount, write_ptr);
+  if (appended < 0){
+    printf("Buffer size exceeded but IGNORED!\n");
+  }
+
+  addData(msg, data_buffer, strlen(data_buffer));
+  printf("Created compute resp\n");
+}
+
+void createRecentRequest(message* msg, unsigned char known_id, int amount){
+  createRequest(msg, known_id);
+  msg->info_type=RECENT_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  sprintf(data_buffer, "%d ", amount);
+  addData(msg, data_buffer, strlen(data_buffer));
+}
+
+void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount){
+  createResponse(msg, known_id, response_to);
+  msg->info_type=RECENT_INFO;
+  char data_buffer[200];
+  memset(data_buffer, 0, 200);
+  char* write_ptr=data_buffer;
+
+  int appended=writeNumsToChars(&amount, 1, write_ptr);
+  write_ptr+=appended;
+  appended=writeNumsToChars(nums, amount, write_ptr);
+  if (appended < 0){
+    printf("Buffer size exceeded but IGNORED!\n");
+  }
+
+  addData(msg, data_buffer, strlen(data_buffer));
+}
+
+
 int writeNumsToChars(int* nums, int amount, char* raw){
   int i;
   int appended;
@@ -63,7 +121,11 @@ int writeNumsToChars(int* nums, int amount, char* raw){
     appended=sprintf(write_ptr, "%d ", nums[i]);
     write_ptr+=appended;
   }
-  return (write_ptr-raw);
+  int total_wrote=write_ptr-raw;
+  if (total_wrote > 200){
+    return -1;
+  }
+  return total_wrote;
 }
 
 int readNumsFromChars(char* raw, int* nums, int amount){
@@ -248,7 +310,6 @@ void finalizeMessagesSet(messages_set* set){
 }
 
 void markSetInactive(messages_set* set){
-  printf("Marking as inactive..\n");
   pthread_mutex_t* mutex=&(set->messages_mutex);
   pthread_cond_t* change=&(set->status_changed);
   pthread_mutex_lock(mutex);
@@ -257,12 +318,10 @@ void markSetInactive(messages_set* set){
   pthread_cond_broadcast(change);
 
   pthread_mutex_unlock(mutex);
-  printf("Marked..\n");
-
+  printf("Marked set as inactive..\n");
 }
 
 void finalizeMessage(message* msg){
-  printMessage(msg);
   if (msg->data != NULL){
     free(msg->data);
     msg->data=NULL;

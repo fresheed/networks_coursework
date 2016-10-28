@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include "general/messages.h"
+#include "general/logic.h"
 
 #ifndef server_structs
 #define server_structs
@@ -10,6 +11,7 @@ typedef struct node_data {
   messages_set set;
   unsigned int socket_fd;
   void* nodes_params;
+  primes_pool* common_pool;
 } node_data;
 
 typedef struct nodes_info {
@@ -24,6 +26,7 @@ typedef struct nodes_info {
 typedef struct server_data {
   pthread_t accept_thread;
   unsigned int listen_socket_fd;
+  unsigned int last_executor;
 } server_data;
 #endif
 
