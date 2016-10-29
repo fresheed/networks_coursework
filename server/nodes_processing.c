@@ -1,4 +1,4 @@
-#include <pthread.h>
+//#include <pthread.h>
 #include <stdio.h>
 #include "server/nodes_processing.h"
 #include "server/server_threads.h"
@@ -19,12 +19,12 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
       printf("Pending socket closed\n");
       return;
     }
-    pthread_cond_wait(signal, &mutex);   
+    pthread_cond_wait(signal, &mutex);
   }
   printf("Got slot %d\n", slot_ind);
 
   initNewNode(&(nodes[slot_ind]), nodes_params,
-	      nodes_params->unique_id_counter++, 
+	      nodes_params->unique_id_counter++,
 	      nodes_params->pending_socket, pool);
   printf("Node %d: id=%d\n", slot_ind, nodes[slot_ind].id);
 
@@ -50,10 +50,10 @@ int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned i
     }
     index=(index+1) % max_nodes;
     count++;
-  }  
+  }
   if (count == max_nodes){
-    return -1; 
-  } else {    
+    return -1;
+  } else {
     message msg;
     fillGeneral(&msg, -1);
     createComputeRequest(&msg, -1, lower_bound, upper_bound);
@@ -84,7 +84,7 @@ void kickNode(nodes_info* nodes_params, int id){
   // following threads are joined in recv
   /* pthread_join(nodes[index].send_thread, NULL); */
   /* pthread_join(nodes[index].proc_thread, NULL); */
-  
+
   close(nodes[index].socket_fd);
 
   finalizeMessagesSet(&(nodes[index].set));
@@ -186,14 +186,14 @@ void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, uns
   node->socket_fd=fd;
 
   initMessagesSet(&(node->set));
-  
+
   node->nodes_params=(void*)nodes_params;
   node->common_pool=pool;
-  
-  pthread_create(&(node->send_thread), NULL, 
+
+  pthread_create(&(node->send_thread), NULL,
 		 &common_send_thread, (void*)(node));
-  pthread_create(&(node->proc_thread), NULL, 
+  pthread_create(&(node->proc_thread), NULL,
 		 &server_proc_thread, (void*)(node));
-  pthread_create(&(node->recv_thread), NULL, 
+  pthread_create(&(node->recv_thread), NULL,
 		 &common_recv_thread, (void*)(node));
 }

@@ -1,4 +1,5 @@
-#include <pthread.h>
+//#include <pthread.h>
+#include "general/u_threads.h"
 
 #ifndef logic_structs
 #define logic_structs
@@ -11,14 +12,15 @@
 typedef struct primes_range {
   unsigned int lower_bound, upper_bound;
   unsigned int numbers[MAX_RANGE_SIZE];
-  char current_status;  
+  char current_status;
   struct primes_range* next_range;
 } primes_range;
 
 typedef struct primes_pool {
   primes_range* first_range;
   unsigned int recent[MAX_RANGE_SIZE];
-  pthread_mutex_t mutex;
+  //pthread_mutex_t mutex;
+  u_mutex mutex;
 } primes_pool;
 
 #endif

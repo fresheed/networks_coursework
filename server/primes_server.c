@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include "server/primes_server.h"
 #include "general/init_sockets.h"
 #include "general/common_threads.h"

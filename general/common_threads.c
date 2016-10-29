@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+//#include <unistd.h>
 //#include <sys/socket.h>
 #include "server/primes_server.h"
 #include "general/init_sockets.h"
@@ -38,9 +38,9 @@ void* common_send_thread(void* raw_node_ptr){
 
 int sendMessageContent(message* msg, int socket_fd){
   char buf[200];
-  memset(buf, 0, 200);
   const int send_flags=0;
-  int needed_len=5;
+  int needed_len=5, actual_sent;
+  memset(buf, 0, 200);
   buf[0]=msg->internal_id;
   buf[1]=msg->status_type;
   buf[2]=msg->info_type;
@@ -56,7 +56,7 @@ int sendMessageContent(message* msg, int socket_fd){
     printMessage(msg);
   }
 
-  int actual_sent=send(socket_fd, buf, needed_len, send_flags);
+  actual_sent=send(socket_fd, buf, needed_len, send_flags);
   return (actual_sent == needed_len);
 }
 

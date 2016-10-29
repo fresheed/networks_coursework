@@ -1,4 +1,5 @@
-#include <pthread.h>
+//#include <pthread.h>
+#include "general/u_threads.h"
 #include "general/logic.h"
 
 #ifndef messages_h
@@ -35,11 +36,12 @@ char next_id;
 unsigned int is_active;
 message messages[MESSAGES_SET_SIZE];
 unsigned int to_send, to_put, to_process;
-pthread_mutex_t messages_mutex;
-//  pthread_cond_t new_empty_slot;
-pthread_cond_t status_changed;
+//pthread_mutex_t messages_mutex;
+u_mutex messages_mutex;
+//pthread_cond_t status_changed;
+u_condition status_changed;
 } messages_set;
- 
+
 #endif
 
 void createRequest(message* msg, unsigned char known_id);
@@ -52,7 +54,7 @@ void createRangeResponse(message* msg, unsigned char known_id, unsigned char res
 void createComputeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
 void createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range range);
 void createRecentRequest(message* msg, unsigned char known_id, int amount);
-void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount); 
+void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount);
 
 int writeNumsToChars(int* nums, int amount, char* raw);
 int readNumsFromChars(char* raw, int* nums, int amount);
