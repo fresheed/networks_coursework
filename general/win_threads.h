@@ -18,11 +18,11 @@ typedef struct u_thread {
 } u_thread;
 
 typedef struct u_mutex {
-    CRITICAL_SECTION crit_section;
+    HANDLE mutex;
 } u_mutex;
 
 typedef struct u_condition {
-    CONDITION_VARIABLE ConditionVar;
+    HANDLE cond_event;
 } u_condition;
 
 
