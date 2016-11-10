@@ -87,12 +87,13 @@ int initializeCurrentNode(int fd){
 
   initMessagesSet(&(node.set));
   
-  pthread_create(&(node.send_thread), NULL,
-  		 &common_send_thread, (void*)(&node));
-  pthread_create(&(node.proc_thread), NULL,
-  		 &node_proc_thread, (void*)(&node));
-  pthread_create(&(node.recv_thread), NULL,
-  		 &common_recv_thread, (void*)(&node));
+  /* pthread_create(&(node.send_thread), NULL, &common_send_thread, (void*)(&node)); */
+  runThread(&(node.send_thread), &common_send_thread, (void*)(&node));
+  /* pthread_create(&(node.proc_thread), NULL, &node_proc_thread, (void*)(&node)); */
+  runThread(&(node.proc_thread), &node_proc_thread, (void*)(&node));
+  /* pthread_create(&(node.recv_thread), NULL, &common_recv_thread, (void*)(&node)); */
+  runThread(&(node.recv_thread), &common_recv_thread, (void*)(&node));
+
 
   printf("threads created\n");
 
@@ -109,9 +110,11 @@ void finalizeCurrentNode(){
   //shutdown(node.socket_fd, SHUT_WR);
   shutdownWr(node.socket_fd);
 
-  pthread_join(node.recv_thread, NULL);
-  /* pthread_join(node.send_thread, NULL); */
-  /* pthread_join(node.proc_thread, NULL); */
+  /* pthread_join(node.recv_thread, NULL); */
+  waitForThread(&(node.recv_thread));
+
+  ///* pthread_join(node.send_thread, NULL); */
+  ///* pthread_join(node.proc_thread, NULL); */
   close(node.socket_fd);
   
   finalizeMessagesSet(&(node.set));
