@@ -18,8 +18,7 @@ primes_pool pool;
 
 int main(){
   if (!initializeServer()){
-    perror("sf\n");
-    printf("Server initialization failed\n");
+    perror("Server initialization failed\n");
     return 1;
   }
   initPool(&pool);
@@ -37,20 +36,23 @@ void processAdminInput(){
   char admin_input[INPUT_MAX];
   while(1){
     printf("\n=>");
-
     fgets(admin_input, INPUT_MAX, stdin);
+    cleanupZombieNodes(&nodes_params);
     if (strncmp(admin_input, "q", 1)==0){
       printf("QUIT\n");
       break;
     } else if (strncmp(admin_input, "k ", 2)==0) {
-      char id_raw=admin_input[2];
-      if (isdigit(id_raw)){
-	int id_to_kick=id_raw-'0';
-	kickNode(&nodes_params, id_to_kick);
+      int id_to_kick;
+      if (!sscanf(admin_input, "k %d", &id_to_kick)){
+	printf("Correct format: k (id>0)\n");
+	continue;
       } else {
-	printf("Wrong format. Try k (id 0..9)\n");
+	if (id_to_kick > 0){
+	  kickSingleNode(&nodes_params, id_to_kick);	
+	} 
       }
     } else if (strncmp(admin_input, "st", 2)==0) {
+      printNodes(&nodes_params);
       printPoolStatus(&pool);
     } else if (strncmp(admin_input, "cr", 2)==0) {
       int lower, upper;
@@ -67,18 +69,6 @@ void processAdminInput(){
 	printf("Assigned task to node %d\n", used_executor);
 	server_params.last_executor=used_executor;
       }
-      /* primes_range tmp; */
-      /* memset(tmp.numbers, 0, MAX_RANGE_SIZE); */
-      /* tmp.lower_bound=lower; */
-      /* tmp.upper_bound=upper; */
-      /* int i, to_put=0; */
-      /* for (i = lower; i < upper; i++) { */
-      /* 	if (i % 3 == 0){ */
-      /* 	  tmp.numbers[to_put++]=i; */
-      /* 	} */
-      /* } */
-      /* tmp.current_status=RANGE_COMPUTED; */
-      /* putRangeInPool(tmp, &pool); */
     }
   }
 }
@@ -86,8 +76,8 @@ void processAdminInput(){
 void* runAcceptNodes(){
   while(1){
     int tmp_fd=acceptClient(server_params.listen_socket_fd);
-    closeDisconnectedNodes(&nodes_params);
     if (tmp_fd > 0){
+      cleanupZombieNodes(&nodes_params);
       addNewNode(&nodes_params, tmp_fd, &pool);
     } else {
       printf("Accept failed\n");
@@ -96,6 +86,9 @@ void* runAcceptNodes(){
   }
 
   finalizeNodes(&nodes_params);
+  // now our queue is empty
+  // so we can init pending connection
+  // and close it right now - which is done next
 
   return NULL;
 }
@@ -108,6 +101,8 @@ int initializeServer(){
     nodes[i].id=0;
   }
   nodes_params.unique_id_counter=1;
+  nodes_params.pending_socket=-1;
+
   /* pthread_mutex_init(&nodes_params.nodes_mutex, NULL); */
   createMutex(&nodes_params.nodes_mutex);
   /* pthread_cond_init(&nodes_params.nodes_refreshed, NULL); */
@@ -130,13 +125,15 @@ int initializeServer(){
 void finalizeServer(){
   unsigned int server_socket_fd=server_params.listen_socket_fd;
   printf("Shutting down server socket %d\n", server_socket_fd);
+  // need to do this to unblock server
+  closePendingConnections(&nodes_params, &pool);
   //shutdown(server_socket_fd, SHUT_RDWR);
   shutdownRdWr(server_socket_fd);
 
   printf("Joining accept thread\n");
-  closePendingConnections(&nodes_params);
   /* pthread_join(server_params.accept_thread, NULL); */
   waitForThread(&server_params.accept_thread);
+  
   /* pthread_cond_destroy(&nodes_params.nodes_refreshed); */
   destroyCondition(&nodes_params.nodes_refreshed);
 
@@ -148,5 +145,6 @@ void finalizeServer(){
   /* pthread_mutex_destroy(&nodes_params.nodes_mutex); */
   destroyMutex(&nodes_params.nodes_mutex);
 }
+
 
 

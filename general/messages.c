@@ -112,6 +112,11 @@ void createRecentResponse(message* msg, unsigned char known_id, unsigned char re
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
+void createInitShutdownRequest(message* msg, unsigned char known_id, int amount){
+  createRequest(msg, known_id);
+  msg->info_type=INIT_SHUTDOWN;
+}
+
 
 int writeNumsToChars(int* nums, int amount, char* raw){
   int i;

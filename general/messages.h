@@ -12,6 +12,7 @@
 #define RANGE_INFO 1
 #define COMPUTE_INFO 2
 #define RECENT_INFO 3
+#define INIT_SHUTDOWN 4
 
 #define EMPTY_SLOT 10
 #define TO_PROCESS 1

@@ -9,22 +9,25 @@
 
 void* node_proc_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   messages_set* set=&(node->set);
   int id=node->id;
-  while (1){
+  while (1){    
     message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
     }
-    nodeProcessMessage(next_msg, set);
+    int continue_proc=nodeProcessMessage(next_msg, set);
+    if (!continue_proc){
+      printf("Shutting down connection...\n");
+      shutdownWr(node->socket_fd);
+    }
   }
-  printf("Stopped to process node %d\n", id);
+  printf("Stopped to process this node\n");
   return NULL;
 }
 
-void nodeProcessMessage(message* msg, messages_set* set){
+int nodeProcessMessage(message* msg, messages_set* set){
   if (msg->status_type == RESPONSE) {
     message* req=findMessageById(set, msg->response_to);
     if (req==NULL){
@@ -61,7 +64,7 @@ void nodeProcessMessage(message* msg, messages_set* set){
       updateMessageStatus(req, set, EMPTY_SLOT);
     }
     updateMessageStatus(msg, set, EMPTY_SLOT);
-  } else {
+  } else { // request
     if (msg->info_type == COMPUTE_INFO){
         printf("Processing\n");
       int primes[MAX_RANGE_SIZE];
@@ -77,9 +80,13 @@ void nodeProcessMessage(message* msg, messages_set* set){
       fillGeneral(&resp, -1);
       createComputeResponse(&resp, -1, msg->internal_id, range);
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
-        printf("Processed\n");
+      printf("Processed\n");
+    } else if (msg->info_type == INIT_SHUTDOWN){
+      printf("Server asked this node to shutdown...\n");
+      return 0;
     }
   }
+  return 1;
 }
 
 

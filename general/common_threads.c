@@ -9,7 +9,6 @@
 
 void* common_send_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   int socket_fd=node->socket_fd;
   messages_set* set=&(node->set);
   int id=node->id;
@@ -23,7 +22,7 @@ void* common_send_thread(void* raw_node_ptr){
     /* printMessage(msg); */
     if (!(sendMessageContent(msg, socket_fd))){
       printf("Send to node %d failed", id);
-      markSetInactive(set);
+      // markSetInactive(set); - should be done only by recv thread
       break;
     } else {
       char next_status=(msg->status_type == REQUEST) ? WAITS_RESPONSE : EMPTY_SLOT;
@@ -67,6 +66,7 @@ void endCommunication(node_data* node){
 
   // at this point peer should sent shutdown already
   //shutdown(node->socket_fd, SHUT_WR);
+
   shutdownWr(node->socket_fd);
   close(node->socket_fd);
 }
@@ -74,7 +74,6 @@ void endCommunication(node_data* node){
 
 void* common_recv_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  nodes_info* nodes_params=(nodes_info*)node->nodes_params;
   messages_set* set=&(node->set);
   char buffer[100];
   int id=node->id;

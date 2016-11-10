@@ -33,10 +33,12 @@ int prepareServerSocket(){
 
   int server_socket_fd=socket(AF_INET, SOCK_STREAM, 0);
   if (server_socket_fd < 0) {
+    perror("Error on socket creation\n");
     return -1;
   }
   if (bind(server_socket_fd, (struct sockaddr *)&server_address,
 	   sizeof(server_address)) < 0){
+    perror("Error on bind\n");
     return -1;
   }
 

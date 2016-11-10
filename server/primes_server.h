@@ -13,7 +13,7 @@ typedef struct node_data {
     u_thread send_thread, recv_thread, proc_thread;
   messages_set set;
   unsigned int socket_fd;
-  void* nodes_params;
+  //void* nodes_params;
   primes_pool* common_pool;
 } node_data;
 
