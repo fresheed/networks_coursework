@@ -3,3 +3,6 @@
 old/
 primes_node
 primes_server
+Primes.*
+bin/
+main.c

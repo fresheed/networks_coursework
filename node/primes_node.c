@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
 
   processUserInput();
   printf("will finalize\n");
-  finalizeCurrentNode();  
+  finalizeCurrentNode();
   return 0;
 }
 
@@ -46,7 +46,7 @@ void processUserInput(){
   char user_input[INPUT_MAX];
   while(1){
     memset(user_input, 0, INPUT_MAX);
-    printf("\n=>");    
+    printf("\n=>");
     fgets(user_input, INPUT_MAX, stdin);
     message msg;
     fillGeneral(&msg, -1);
@@ -76,7 +76,7 @@ void processUserInput(){
       createRecentRequest(&msg, -1, to_show);
       message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
       printf("sending recent %d request\n", to_show);
-    } 
+    }
 
   }
 }
@@ -86,7 +86,7 @@ int initializeCurrentNode(int fd){
   node.socket_fd=fd;
 
   initMessagesSet(&(node.set));
-  
+
   /* pthread_create(&(node.send_thread), NULL, &common_send_thread, (void*)(&node)); */
   runThread(&(node.send_thread), &common_send_thread, (void*)(&node));
   /* pthread_create(&(node.proc_thread), NULL, &node_proc_thread, (void*)(&node)); */
@@ -102,7 +102,6 @@ int initializeCurrentNode(int fd){
 
 void finalizeCurrentNode(){
   printf("started to finalize current node\n");
-  int i;
 
   //close(node.socket_fd);
 
@@ -112,11 +111,12 @@ void finalizeCurrentNode(){
 
   /* pthread_join(node.recv_thread, NULL); */
   waitForThread(&(node.recv_thread));
+  printf("node threads finished\n");
 
   ///* pthread_join(node.send_thread, NULL); */
   ///* pthread_join(node.proc_thread, NULL); */
   close(node.socket_fd);
-  
+
   finalizeMessagesSet(&(node.set));
 
   printf("finalized current node\n");

@@ -124,7 +124,6 @@ int recvMessageContent(message* msg, int socket_fd){
     readN(socket_fd, buf+5, msg->data_len);
     addData(msg, buf+5, msg->data_len);
   }
-  printf("got message\n");
   printMessage(msg);
   if ((msg->data_len == 0) && (msg->data != NULL)){
     printf("Strange msg recv:\n");
@@ -161,11 +160,9 @@ int readN(int socket_fd, char* read_buf, int message_len){
     total_read+=actual_read_now;
   }
   int i;
-  printf("Tqotal read: %d\n", total_read);
   for (i=0; i<total_read; i++){
     int tmp;
     tmp=read_buf[i];
-    printf("_%d", tmp);
   }
   return read_status==0;
 }

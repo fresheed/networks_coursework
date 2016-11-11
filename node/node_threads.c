@@ -11,13 +11,16 @@ void* node_proc_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
   messages_set* set=&(node->set);
   int id=node->id;
-  while (1){    
+  while (1){
+    printf("Processing...\n");
     message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
+    printf("will process msg\n");
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
     }
     int continue_proc=nodeProcessMessage(next_msg, set);
+    printf("Message processed\n");
     if (!continue_proc){
       printf("Shutting down connection...\n");
       shutdownWr(node->socket_fd);

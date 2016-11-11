@@ -214,6 +214,7 @@ message* lockNextMessage(messages_set* set, char cur_status){
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
     /* pthread_cond_wait(was_changed, mutex); */
     blockOnCondition(was_changed, mutex);
+    printf("condition signaled when waiting for %d\n", cur_status);
     if (!(set->is_active)){
       /* pthread_mutex_unlock(mutex); */
       unlockMutex(mutex);

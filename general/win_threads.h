@@ -4,17 +4,8 @@
 #ifndef u_win_threads
 #define u_win_threads
 
-void createThread();
-void createMutex();
-void createCondition();
-void destroyMutex();
-void destroyCondition();
-void signalOne();
-void signalAll();
-void waitForThread();
-
 typedef struct u_thread {
-    HANDLE hThread;
+    HANDLE thread;
 } u_thread;
 
 typedef struct u_mutex {
@@ -22,8 +13,19 @@ typedef struct u_mutex {
 } u_mutex;
 
 typedef struct u_condition {
-    HANDLE cond_event;
+    HANDLE cond;
 } u_condition;
 
-
 #endif // u_win_threads
+
+void runThread(u_thread* ut, void* thread_func(void* arg), void* with_arg);
+void createMutex(u_mutex* um);
+void destroyMutex(u_mutex* um);
+void lockMutex(u_mutex* um);
+void unlockMutex(u_mutex* um);
+void createCondition(u_condition* um);
+void destroyCondition(u_condition* uc);
+void blockOnCondition(u_condition* uc, u_mutex* um);
+void signalAll(u_condition* uc);
+void signalOne(u_condition* uc);
+void waitForThread(u_thread* ut);
