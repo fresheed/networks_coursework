@@ -23,12 +23,10 @@ void initPool(primes_pool* pool){
 
   memset(pool->recent, 0, MAX_RANGE_SIZE);
 
-  /* pthread_mutex_init(&pool->mutex, NULL); */
   createMutex(&(pool->mutex));
 }
 
 void putRangeInPool(primes_range src_range, primes_pool* pool){
-  /* pthread_mutex_lock(&(pool->mutex)); */
   lockMutex(&(pool->mutex));
 
   primes_range* new_range=(primes_range*)malloc(sizeof(primes_range));
@@ -54,7 +52,6 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
     } else if (check < 0){
       // error - no matching place
       printf("Range cannot be placed\n");
-      /* pthread_mutex_unlock(&(pool->mutex));   */
       unlockMutex(&(pool->mutex));
       return;
     } else {
@@ -72,7 +69,6 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
 
   updateRecent(pool, new_range);
   
-  /* pthread_mutex_unlock(&(pool->mutex));   */
   unlockMutex(&(pool->mutex));
 }
 
@@ -138,7 +134,6 @@ int validateRangeParams(int lower, int upper){
 
 
 void destroyPool(primes_pool* pool){
-  /* pthread_mutex_lock(&(pool->mutex)); */
   lockMutex(&(pool->mutex));
   primes_range* range=pool->first_range;
   primes_range* next;
@@ -147,22 +142,18 @@ void destroyPool(primes_pool* pool){
     free(range);
     range=next;    
   }
-  /* pthread_mutex_unlock(&(pool->mutex)); */
   unlockMutex(&(pool->mutex));
 
-  /* pthread_mutex_destroy(&(pool->mutex)); */
   destroyMutex(&(pool->mutex));
 }
 
 void printPoolStatus(primes_pool* pool){
-  /* pthread_mutex_lock(&(pool->mutex)); */
   lockMutex(&(pool->mutex));
   primes_range* range=pool->first_range;
   while (range != NULL){
     printRangeStatus(range);
     range=range->next_range;
   }
-  /* pthread_mutex_unlock(&(pool->mutex)); */
   unlockMutex(&(pool->mutex));
 }
 
@@ -203,13 +194,11 @@ void computePrimesInRange(primes_range* range){
 }
 
 void getRecentPrimes(int amount, primes_pool* pool, int* res){
-  /* pthread_mutex_lock(&(pool->mutex)); */
   lockMutex(&(pool->mutex));
   int i;
   for (i = 0; i<amount; i++) {
     res[i]=pool->recent[i];
   }
-  /* pthread_mutex_unlock(&(pool->mutex)); */
   unlockMutex(&(pool->mutex));
 }
 
@@ -244,7 +233,6 @@ int getPrimesCountInRange(primes_range* range){
 }
 
 int getCurrentMaxPrime(primes_pool* pool){
-  /* pthread_mutex_lock(&(pool->mutex)); */
   lockMutex(&(pool->mutex));
   primes_range* range=pool->first_range;
   while (range->next_range != NULL){
@@ -253,7 +241,6 @@ int getCurrentMaxPrime(primes_pool* pool){
   // now it points to last range
   int total_in_range=getPrimesCountInRange(range);
   int max=range->numbers[total_in_range-1];
-  /* pthread_mutex_unlock(&(pool->mutex)); */
   unlockMutex(&(pool->mutex));
   return max;
 }

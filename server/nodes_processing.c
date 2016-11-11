@@ -1,4 +1,3 @@
-//#include <pthread.h>
 #include <stdio.h>
 #include "server/nodes_processing.h"
 #include "server/server_threads.h"
@@ -7,12 +6,9 @@
 
 void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
   node_data* nodes=nodes_params->nodes;
-  /* pthread_mutex_t mutex=nodes_params->nodes_mutex; */
   u_mutex* mutex=&(nodes_params->nodes_mutex);
-  /* pthread_cond_t* signal=&(nodes_params->nodes_refreshed); */
   u_condition* signal=&(nodes_params->nodes_refreshed); 
 
-  /* pthread_mutex_lock(&mutex); */
   lockMutex(mutex);
   nodes_params->pending_socket=new_socket_fd;
 
@@ -20,11 +16,9 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
   while ((slot_ind=getNewNodeIndex(nodes, nodes_params->max_nodes)) == -1){
     if (nodes_params->pending_socket == -1){ // no pending now
       printf("Pending socket closed\n");
-      /* pthread_mutex_unlock(&mutex); */
       unlockMutex(mutex);
       return;
     }
-    /* pthread_cond_wait(signal, &mutex); */
     blockOnCondition(signal, mutex);
   }
   printf("Got slot %d\n", slot_ind);
@@ -36,17 +30,14 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
 
   nodes_params->pending_socket=-1;
 
-  /* pthread_mutex_unlock(&mutex); */
   unlockMutex(mutex);
 }
 
 int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned int upper_bound, nodes_info* nodes_params){
   node_data* nodes=nodes_params->nodes;
   int max_nodes=nodes_params->max_nodes;
-  /* pthread_mutex_t mutex=nodes_params->nodes_mutex; */
   u_mutex* mutex=&(nodes_params->nodes_mutex);
 
-  /* pthread_mutex_lock(&mutex); */
   lockMutex(mutex);
 
   int index=last_executor, count=0;
@@ -61,7 +52,6 @@ int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned i
     count++;
   }
   if (count == max_nodes){
-    /* pthread_mutex_unlock(&mutex); */
     unlockMutex(mutex);    
     return -1;
   } else {
@@ -71,25 +61,19 @@ int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned i
     message* put_msg=putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
   }
 
-  /* pthread_mutex_unlock(&mutex); */
   unlockMutex(mutex);
   return (index+1) % max_nodes; // next time start from next executor
 }
 
 void kickSingleNode(nodes_info* nodes_params, int id){
-  /* pthread_cond_t* signal=&(nodes_params->nodes_refreshed); */
   u_condition* signal=&(nodes_params->nodes_refreshed);
-  /* pthread_mutex_t mutex=nodes_params->nodes_mutex; */
   u_mutex* mutex=&(nodes_params->nodes_mutex);
 
-  /* pthread_mutex_lock(&mutex); */
   lockMutex(mutex);
 
   processKick(nodes_params, id);
 
-  /* pthread_cond_signal(signal); */
   signalOne(signal);
-  /* pthread_mutex_unlock(&mutex); */
   unlockMutex(mutex);
 }
 
@@ -114,7 +98,6 @@ void processKick(nodes_info* nodes_params, int id){
   // its recv thread call shutdown too and closes socket
   // so we only need to wait on recv completion
   
-  /* pthread_join(nodes[index].recv_thread, NULL); */
   waitForThread(&(nodes[index].recv_thread));
 
   finalizeMessagesSet(&(nodes[index].set));
@@ -128,12 +111,9 @@ void finalizeNodes(nodes_info* nodes_params){
   int max_nodes=nodes_params->max_nodes;
   int i;
   node_data* nodes=nodes_params->nodes;
-  /* pthread_cond_t* signal=&(nodes_params->nodes_refreshed); */
   u_condition* signal=&(nodes_params->nodes_refreshed);
-  /* pthread_mutex_t mutex=nodes_params->nodes_mutex; */
   u_mutex* mutex=&(nodes_params->nodes_mutex); 
 
-  /* pthread_mutex_lock(&mutex); */
   lockMutex(mutex);
 
   for (i=0; i<max_nodes; i++){
@@ -143,9 +123,7 @@ void finalizeNodes(nodes_info* nodes_params){
   }
 
   printf("finalized nodes\n");
-  /* pthread_cond_signal(signal); */
   signalOne(signal);
-  /* pthread_mutex_unlock(&mutex); */
   unlockMutex(mutex);
 }
 
@@ -167,16 +145,12 @@ void cleanupZombieNodes(nodes_info* nodes_params){
 
 
 void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
-  /* pthread_cond_t* signal=&(nodes_params->nodes_refreshed); */
   u_condition* signal=&(nodes_params->nodes_refreshed); 
-  /* pthread_mutex_t mutex=nodes_params->nodes_mutex; */
   u_mutex* mutex=&(nodes_params->nodes_mutex);
 
-  /* pthread_mutex_lock(&mutex); */
   lockMutex(mutex);
   int pending=nodes_params->pending_socket;
   if (pending < 0) {
-    /* pthread_mutex_unlock(&mutex); */
     printf("No pending connections found\n");
     unlockMutex(mutex);
     return;
@@ -196,9 +170,7 @@ void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
   /* close(nodes_params->pending_socket); */
   nodes_params->pending_socket=-1;
 
-  /* pthread_cond_signal(signal); */
   signalOne(signal);
-  /* pthread_mutex_unlock(&mutex); */
   unlockMutex(mutex);
 }
 
@@ -231,11 +203,8 @@ void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, uns
 
   node->common_pool=pool;
 
-  /* pthread_create(&(node->send_thread), NULL, &common_send_thread, (void*)(node)); */
   runThread(&(node->send_thread), &common_send_thread, (void*)(node));
-  /* pthread_create(&(node->proc_thread), NULL, &server_proc_thread, (void*)(node)); */
   runThread(&(node->proc_thread), &server_proc_thread, (void*)(node));
-  /* pthread_create(&(node->recv_thread), NULL, &common_recv_thread, (void*)(node)); */
   runThread(&(node->recv_thread), &common_recv_thread, (void*)(node));
 }
 

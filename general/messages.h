@@ -37,9 +37,7 @@ char next_id;
 unsigned int is_active;
 message messages[MESSAGES_SET_SIZE];
 unsigned int to_send, to_put, to_process;
-//pthread_mutex_t messages_mutex;
 u_mutex messages_mutex;
-//pthread_cond_t status_changed;
 u_condition status_changed;
 } messages_set;
 

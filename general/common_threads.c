@@ -59,13 +59,10 @@ int sendMessageContent(message* msg, int socket_fd){
 
 // should be executed from recv thread only
 void endCommunication(node_data* node){
-  /* pthread_join(node->proc_thread, NULL); */
-  /* pthread_join(node->send_thread, NULL); */
   waitForThread(&(node->proc_thread));
   waitForThread(&(node->send_thread));
 
   // at this point peer should sent shutdown already
-  //shutdown(node->socket_fd, SHUT_WR);
 
   shutdownWr(node->socket_fd);
   close(node->socket_fd);

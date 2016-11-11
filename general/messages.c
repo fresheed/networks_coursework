@@ -167,12 +167,9 @@ void addData(message* msg, char* new_data, unsigned int len){
 message* putMessageInSet(message msg, messages_set* set, char new_status, int generate_id){
   // message will be COPIED into set
   // returns pointer to message in set
-  /* pthread_mutex_t* mutex=&(set->messages_mutex); */
   u_mutex* mutex=&(set->messages_mutex);
-  /* pthread_cond_t* was_changed=&(set->status_changed); */
   u_condition* was_changed=&(set->status_changed);
 
-  /* pthread_mutex_lock(mutex); */
   lockMutex(mutex);
   if (generate_id){
     msg.internal_id=(set->next_id)++;
@@ -180,10 +177,8 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, EMPTY_SLOT)) == NULL){
-    /* pthread_cond_wait(was_changed, mutex); */
     blockOnCondition(was_changed, mutex);
     if (!(set->is_active)){
-      /* pthread_mutex_unlock(mutex); */
       unlockMutex(mutex);
       return NULL;
     }
@@ -191,10 +186,8 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
 
   *slot_ptr=msg;
   slot_ptr->current_status=new_status;
-  /* pthread_cond_broadcast(was_changed); */
   signalAll(was_changed);
 
-  /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
 
   printf("put\n");
@@ -202,20 +195,16 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
 }
 
 message* lockNextMessage(messages_set* set, char cur_status){
-  /* pthread_mutex_t* mutex=&(set->messages_mutex); */
   u_mutex* mutex=&(set->messages_mutex);
-  /* pthread_cond_t* was_changed=&(set->status_changed); */
   u_condition* was_changed=&(set->status_changed);
 
-  /* pthread_mutex_lock(mutex); */
   lockMutex(mutex);
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
-    /* pthread_cond_wait(was_changed, mutex); */
+    printf("Before blocking\n");
     blockOnCondition(was_changed, mutex);
     if (!(set->is_active)){
-      /* pthread_mutex_unlock(mutex); */
       unlockMutex(mutex);
       return NULL;
     }
@@ -223,7 +212,6 @@ message* lockNextMessage(messages_set* set, char cur_status){
 
   slot_ptr->current_status=OWNED;
 
-  /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
 
   return slot_ptr;
@@ -261,30 +249,23 @@ message* findMessageWithStatus(messages_set* set, char status){
 }
 
 message* findMessageById(messages_set* set, char id){
-  /* pthread_mutex_t* mutex=&(set->messages_mutex); */
   u_mutex* mutex=&(set->messages_mutex);
-  /* pthread_mutex_lock(mutex); */
   lockMutex(mutex);
 
   int i;
   for (i=0; i<MESSAGES_SET_SIZE; i++){
     if (set->messages[i].internal_id == id){
-      /* pthread_mutex_unlock(mutex); */
       unlockMutex(mutex);
       return &(set->messages[i]);
     }
   }
-  /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
   return NULL;
 }
 
 void updateMessageStatus(message* msg, messages_set* set, char new_status){
-  /* pthread_mutex_t* mutex=&(set->messages_mutex); */
   u_mutex* mutex=&(set->messages_mutex);
-  /* pthread_cond_t* change=&(set->status_changed); */
   u_condition* change=&(set->status_changed);
-  /* pthread_mutex_lock(mutex); */
   lockMutex(mutex);
 
   msg->current_status=new_status;
@@ -292,9 +273,7 @@ void updateMessageStatus(message* msg, messages_set* set, char new_status){
     finalizeMessage(msg);
   }
 
-  /* pthread_cond_broadcast(change); */
   signalAll(change);
-  /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
 }
 
@@ -313,9 +292,7 @@ void initMessagesSet(messages_set* set){
   set->to_process=0;
   set->to_send=0;
   set->is_active=1;
-  /* pthread_mutex_init(&(set->messages_mutex), NULL); */
   createMutex(&(set->messages_mutex));
-  /* pthread_cond_init(&(set->status_changed), NULL); */
   createCondition(&(set->status_changed));
 }
 
@@ -335,25 +312,18 @@ void finalizeMessagesSet(messages_set* set){
     (set->messages)[i].current_status=EMPTY_SLOT;
     finalizeMessage(&(set->messages[i]));
   }
-  /* pthread_mutex_destroy(&(set->messages_mutex)); */
   destroyMutex(&(set->messages_mutex));
-  /* pthread_cond_destroy(&(set->status_changed)); */
   destroyCondition(&(set->status_changed));
 }
 
 void markSetInactive(messages_set* set){
-  /* pthread_mutex_t* mutex=&(set->messages_mutex); */
   u_mutex* mutex=&(set->messages_mutex);
-  /* pthread_cond_t* change=&(set->status_changed); */
   u_condition* change=&(set->status_changed);
-  /* pthread_mutex_lock(mutex); */
   lockMutex(mutex);
 
   set->is_active=0;
-  /* pthread_cond_broadcast(change); */
   signalAll(change);
 
-  /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
   printf("Marked set as inactive..\n");
 }

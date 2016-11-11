@@ -103,9 +103,7 @@ int initializeServer(){
   nodes_params.unique_id_counter=1;
   nodes_params.pending_socket=-1;
 
-  /* pthread_mutex_init(&nodes_params.nodes_mutex, NULL); */
   createMutex(&nodes_params.nodes_mutex);
-  /* pthread_cond_init(&nodes_params.nodes_refreshed, NULL); */
   createCondition(&nodes_params.nodes_refreshed);
 
   int listen_fd=prepareServerSocket();
@@ -114,7 +112,6 @@ int initializeServer(){
   }
   server_params.listen_socket_fd=listen_fd;
 
-  /* pthread_create(&server_params.accept_thread, NULL, &runAcceptNodes, NULL); */
   runThread(&server_params.accept_thread, &runAcceptNodes, NULL);
 
   server_params.last_executor=0;
@@ -131,10 +128,8 @@ void finalizeServer(){
   shutdownRdWr(server_socket_fd);
 
   printf("Joining accept thread\n");
-  /* pthread_join(server_params.accept_thread, NULL); */
   waitForThread(&server_params.accept_thread);
   
-  /* pthread_cond_destroy(&nodes_params.nodes_refreshed); */
   destroyCondition(&nodes_params.nodes_refreshed);
 
   printf("Closing accept socket\n");
@@ -142,7 +137,6 @@ void finalizeServer(){
 
   destroyPool(&pool);
 
-  /* pthread_mutex_destroy(&nodes_params.nodes_mutex); */
   destroyMutex(&nodes_params.nodes_mutex);
 }
 

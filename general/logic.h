@@ -19,7 +19,6 @@ typedef struct primes_range {
 typedef struct primes_pool {
   primes_range* first_range;
   unsigned int recent[MAX_RANGE_SIZE];
-  //pthread_mutex_t mutex;
   u_mutex mutex;
 } primes_pool;
 
