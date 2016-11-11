@@ -12,9 +12,7 @@ void* node_proc_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   int id=node->id;
   while (1){
-    printf("Processing...\n");
     message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
-    printf("will process msg\n");
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
@@ -69,7 +67,6 @@ int nodeProcessMessage(message* msg, messages_set* set){
     updateMessageStatus(msg, set, EMPTY_SLOT);
   } else { // request
     if (msg->info_type == COMPUTE_INFO){
-        printf("Processing\n");
       int primes[MAX_RANGE_SIZE];
       int bounds[2];
       readNumsFromChars(msg->data, bounds, 2);

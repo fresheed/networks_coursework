@@ -37,7 +37,6 @@ void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, i
   char data_buffer[200];
   memset(data_buffer, 0, 200);
   sprintf(data_buffer, "%d %d", lower_bound, upper_bound);
-  printf("Data : %s\n", data_buffer);
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
@@ -83,7 +82,6 @@ void createComputeResponse(message* msg, unsigned char known_id, unsigned char r
   }
 
   addData(msg, data_buffer, strlen(data_buffer));
-  printf("Created compute resp\n");
 }
 
 void createRecentRequest(message* msg, unsigned char known_id, int amount){
@@ -197,7 +195,6 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
   /* pthread_mutex_unlock(mutex); */
   unlockMutex(mutex);
 
-  printf("put\n");
   return slot_ptr;
 }
 
@@ -214,7 +211,6 @@ message* lockNextMessage(messages_set* set, char cur_status){
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
     /* pthread_cond_wait(was_changed, mutex); */
     blockOnCondition(was_changed, mutex);
-    printf("condition signaled when waiting for %d\n", cur_status);
     if (!(set->is_active)){
       /* pthread_mutex_unlock(mutex); */
       unlockMutex(mutex);

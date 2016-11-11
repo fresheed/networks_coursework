@@ -12,6 +12,7 @@
 node_data node;
 
 int main(int argc, char* argv[]){
+  initSocketsRuntime();
   char* hostname="localhost";
   int port=3451;
   if (argc>1){
@@ -23,7 +24,6 @@ int main(int argc, char* argv[]){
   printf("Trying to connect %s:%d\n", hostname, port);
 
   int socket_fd=connectToServer(hostname, port);
-  printf("got %d\n", socket_fd);
 
   if (socket_fd < 0 ){
     printf("Server connection failed \n");
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
   }
 
   processUserInput();
-  printf("will finalize\n");
+  finalizeSocketsRuntime();
   finalizeCurrentNode();
   return 0;
 }
@@ -105,7 +105,6 @@ void finalizeCurrentNode(){
 
   //close(node.socket_fd);
 
-  printf("joining\n");
   //shutdown(node.socket_fd, SHUT_WR);
   shutdownWr(node.socket_fd);
 
@@ -115,7 +114,8 @@ void finalizeCurrentNode(){
 
   ///* pthread_join(node.send_thread, NULL); */
   ///* pthread_join(node.proc_thread, NULL); */
-  close(node.socket_fd);
+//  close(node.socket_fd);
+   socketClose(node.socket_fd);
 
   finalizeMessagesSet(&(node.set));
 

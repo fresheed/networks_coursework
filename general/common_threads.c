@@ -68,7 +68,8 @@ void endCommunication(node_data* node){
   //shutdown(node->socket_fd, SHUT_WR);
 
   shutdownWr(node->socket_fd);
-  close(node->socket_fd);
+//  close(node->socket_fd);
+    socketClose(node->socket_fd);
 }
 
 
@@ -81,9 +82,7 @@ void* common_recv_thread(void* raw_node_ptr){
   while (1){
     message msg;
     fillGeneral(&msg, -1);
-    printf("listening...\n");
     int res=recvMessageContent(&msg, socket_fd);
-    printf("recv : %d\n", res);
     if (!res){
       printf("Read from node %d failed\n", id);
       markSetInactive(set);

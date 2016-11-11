@@ -53,14 +53,12 @@ void blockOnCondition(u_condition* uc, u_mutex* um){
 void signalAll(u_condition* uc){
 //  pthread_cond_broadcast(&(uc->cond));
     //SetEvent(uc->cond);
-    printf("all\n");
     PulseEvent(uc->cond);
 }
 
 void signalOne(u_condition* uc){
 //  pthread_cond_signal(&(uc->cond));
    // SetEvent(uc->cond);
-    printf("one\n");
     PulseEvent(uc->cond);
 }
 

@@ -17,6 +17,7 @@ nodes_info nodes_params;
 primes_pool pool;
 
 int main(){
+  initSocketsRuntime();
   if (!initializeServer()){
     perror("Server initialization failed\n");
     return 1;
@@ -26,6 +27,7 @@ int main(){
   processAdminInput();
 
   finalizeServer();
+  finalizeSocketsRuntime();
   printf("Server stopped\n");
 
   return 0;
@@ -48,8 +50,8 @@ void processAdminInput(){
 	continue;
       } else {
 	if (id_to_kick > 0){
-	  kickSingleNode(&nodes_params, id_to_kick);	
-	} 
+	  kickSingleNode(&nodes_params, id_to_kick);
+	}
       }
     } else if (strncmp(admin_input, "st", 2)==0) {
       printNodes(&nodes_params);
@@ -133,12 +135,14 @@ void finalizeServer(){
   printf("Joining accept thread\n");
   /* pthread_join(server_params.accept_thread, NULL); */
   waitForThread(&server_params.accept_thread);
-  
+
   /* pthread_cond_destroy(&nodes_params.nodes_refreshed); */
   destroyCondition(&nodes_params.nodes_refreshed);
 
   printf("Closing accept socket\n");
-  close(server_socket_fd);
+//  close (server_socket_fd);
+  socketClose(server_socket_fd);
+
 
   destroyPool(&pool);
 
