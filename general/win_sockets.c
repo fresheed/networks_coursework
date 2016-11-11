@@ -4,15 +4,6 @@
 #include <stdio.h>
 #include <windows.h>
 
-void libraryInit(){
-	WSADATA WsaData;
-	int err = WSAStartup (0x0101, &WsaData);
-	if (err == SOCKET_ERROR)	{
-           printf ("WSAStartup() failed: %ld\n", GetLastError ());
-           exit(1);
-	}
-}
-
 void setServerAddressParams(struct sockaddr_in* server_address, int port){
   memset(server_address, 0, sizeof(*server_address));
   server_address->sin_family=AF_INET;
@@ -65,7 +56,6 @@ int acceptClient(int server_socket_fd){
 }
 
 int connectToServer(char* hostname, int port){
-libraryInit();
   int node_socket_fd=socket(AF_INET, SOCK_STREAM, 0);
   if (node_socket_fd < 0){
     printf("error opening node socket!\n");
@@ -93,6 +83,24 @@ void shutdownWr(int socket_fd){
 
 void shutdownRdWr(int socket_fd){
   shutdown(socket_fd, SD_BOTH);
+}
+
+void socketClose(int socket_fd){
+    closesocket(socket_fd);
+}
+
+void initSocketsRuntime(){
+    WSADATA wsa;
+    printf("\nInitialising Winsock...\n");
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0){
+        printf("WSA Init Failed. Error Code : %d\n",WSAGetLastError());
+        return;
+    }
+    printf("WSA Initialised\n");
+}
+
+void finalizeSocketsRuntime(){
+    WSACleanup();
 }
 
 

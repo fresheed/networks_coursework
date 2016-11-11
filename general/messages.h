@@ -68,7 +68,7 @@ void updateMessageStatus(message* msg, messages_set* set, char new_status);
 void initMessagesSet(messages_set* set);
 void markSetInactive(messages_set* set);
 void printMessage(message* msg);
-void finalizeMessageSet(messages_set* set);
+void finalizeMessagesSet(messages_set* set);
 void finalizeMessage();
 
 

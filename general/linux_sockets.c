@@ -88,3 +88,15 @@ void shutdownWr(int socket_fd){
 void shutdownRdWr(int socket_fd){
   shutdown(socket_fd, SHUT_RDWR);
 }
+
+void socketClose(int socket_fd){
+  close(socket_fd);  
+}
+
+void initSocketsRuntime(){
+  // only needed by windows
+}
+
+void finalizeSocketsRuntime(){
+  // only needed by windows
+}

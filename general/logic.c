@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "general/logic.h" 
+#include "general/logic.h"
 
 
 void initPool(primes_pool* pool){
@@ -15,7 +15,7 @@ void initPool(primes_pool* pool){
   first.numbers[0]=2;
   first.numbers[1]=3;
   first.current_status=RANGE_COMPUTED;
-  
+
   primes_range* new_range=(primes_range*)malloc(sizeof(primes_range));
   *new_range=first;
   new_range->next_range=NULL;
@@ -42,7 +42,6 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
   while (!(cur_range == NULL)){
     //    if (new_range->lower_bound > cur_range->upper_bound){
     int check=checkRange(new_range, cur_range);
-    printf("check\n");
     if (check > 0){
       // ok
       //new_range->next_range=cur_range->next_range;
@@ -68,7 +67,6 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
   printRangeStatus(new_range);
 
   updateRecent(pool, new_range);
-  
   unlockMutex(&(pool->mutex));
 }
 
@@ -108,7 +106,7 @@ int checkRange(primes_range* to_put, primes_range* prev){
     if (rl <= y){
       if (ru <= x){
 	// may be above next
-	return 0; 
+	return 0;
       }
       return -1;
     } else {
@@ -130,7 +128,7 @@ int validateRangeParams(int lower, int upper){
   }
   return 1;
 }
-  
+
 
 
 void destroyPool(primes_pool* pool){
@@ -140,7 +138,7 @@ void destroyPool(primes_pool* pool){
   while (range != NULL){
     next=range->next_range;
     free(range);
-    range=next;    
+    range=next;
   }
   unlockMutex(&(pool->mutex));
 
@@ -161,7 +159,7 @@ void printRangeStatus(primes_range* range){
   printf("Range %d .. %d\n", range->lower_bound, range->upper_bound);
   int* numbers=range->numbers;
   int i;
-  
+
   for (i = 0; i<MAX_RANGE_SIZE; i++) {
     if (numbers[i] == 0) {
       break;

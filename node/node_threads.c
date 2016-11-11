@@ -11,13 +11,14 @@ void* node_proc_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
   messages_set* set=&(node->set);
   int id=node->id;
-  while (1){    
+  while (1){
     message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
     if (next_msg == NULL){
       printf("Message set is unactive, stopping to process\n");
       break;
     }
     int continue_proc=nodeProcessMessage(next_msg, set);
+    printf("Message processed\n");
     if (!continue_proc){
       printf("Shutting down connection...\n");
       shutdownWr(node->socket_fd);
@@ -66,7 +67,6 @@ int nodeProcessMessage(message* msg, messages_set* set){
     updateMessageStatus(msg, set, EMPTY_SLOT);
   } else { // request
     if (msg->info_type == COMPUTE_INFO){
-        printf("Processing\n");
       int primes[MAX_RANGE_SIZE];
       int bounds[2];
       readNumsFromChars(msg->data, bounds, 2);

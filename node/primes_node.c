@@ -12,6 +12,7 @@
 node_data node;
 
 int main(int argc, char* argv[]){
+  initSocketsRuntime();
   char* hostname="localhost";
   int port=3451;
   if (argc>1){
@@ -23,7 +24,6 @@ int main(int argc, char* argv[]){
   printf("Trying to connect %s:%d\n", hostname, port);
 
   int socket_fd=connectToServer(hostname, port);
-  printf("got %d\n", socket_fd);
 
   if (socket_fd < 0 ){
     printf("Server connection failed \n");
@@ -36,8 +36,8 @@ int main(int argc, char* argv[]){
   }
 
   processUserInput();
-  printf("will finalize\n");
-  finalizeCurrentNode();  
+  finalizeSocketsRuntime();
+  finalizeCurrentNode();
   return 0;
 }
 
@@ -46,7 +46,7 @@ void processUserInput(){
   char user_input[INPUT_MAX];
   while(1){
     memset(user_input, 0, INPUT_MAX);
-    printf("\n=>");    
+    printf("\n=>");
     fgets(user_input, INPUT_MAX, stdin);
     message msg;
     fillGeneral(&msg, -1);
@@ -76,7 +76,7 @@ void processUserInput(){
       createRecentRequest(&msg, -1, to_show);
       message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
       printf("sending recent %d request\n", to_show);
-    } 
+    }
 
   }
 }
@@ -86,7 +86,6 @@ int initializeCurrentNode(int fd){
   node.socket_fd=fd;
 
   initMessagesSet(&(node.set));
-  
   runThread(&(node.send_thread), &common_send_thread, (void*)(&node));
   runThread(&(node.proc_thread), &node_proc_thread, (void*)(&node));
   runThread(&(node.recv_thread), &common_recv_thread, (void*)(&node));
@@ -99,18 +98,16 @@ int initializeCurrentNode(int fd){
 
 void finalizeCurrentNode(){
   printf("started to finalize current node\n");
-  int i;
 
   //close(node.socket_fd);
 
-  printf("joining\n");
   //shutdown(node.socket_fd, SHUT_WR);
   shutdownWr(node.socket_fd);
 
   waitForThread(&(node.recv_thread));
+  printf("node threads finished\n");
 
-  close(node.socket_fd);
-  
+  socketClose(node.socket_fd);
   finalizeMessagesSet(&(node.set));
 
   printf("finalized current node\n");
