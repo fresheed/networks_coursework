@@ -24,9 +24,8 @@ int main(){
   }
   initPool(&pool);
 
-  printf("Int: %ld, long: %d\n", sizeof(int), sizeof(long));
-  printf("Range restrict: %ld to %ld, max range size is %ld\n", 
-	 0, MAX_NUM, MAX_RANGE_SIZE);
+  printf("Range restrict: %d to %ld, max range size is %ld\n", 
+	 0, (long)MAX_NUM, (long)MAX_RANGE_SIZE);
   processAdminInput();
 
   finalizeServer();
@@ -39,6 +38,7 @@ int main(){
 void processAdminInput(){
   const int INPUT_MAX=200;
   char admin_input[INPUT_MAX];
+  long test_lower, test_upper;
   while(1){
     printf("\n=>");
     fgets(admin_input, INPUT_MAX, stdin);
@@ -59,6 +59,30 @@ void processAdminInput(){
     } else if (strncmp(admin_input, "st", 2)==0) {
       printNodes(&nodes_params);
       printPoolStatus(&pool);
+    } else if (strncmp(admin_input, "cr1", 3)==0) {
+      test_lower=200000000;
+      test_upper=200200000;
+      int used_executor=assignTaskToNextNode(server_params.last_executor,
+					     test_lower, test_upper,
+					     &nodes_params);
+      if (used_executor < 0){
+	printf("No executor available now, please try later\n");
+      } else {
+	printf("Assigned task to node %d\n", used_executor);
+	server_params.last_executor=used_executor;
+      }
+    } else if (strncmp(admin_input, "cr2", 3)==0) {
+      test_lower=250000000;
+      test_upper=250200000;
+      int used_executor=assignTaskToNextNode(server_params.last_executor,
+					     test_lower, test_upper,
+					     &nodes_params);
+      if (used_executor < 0){
+	printf("No executor available now, please try later\n");
+      } else {
+	printf("Assigned task to node %d\n", used_executor);
+	server_params.last_executor=used_executor;
+      }
     } else if (strncmp(admin_input, "cr", 2)==0) {
       long lower, upper;
       sscanf(admin_input, "cr %ld %ld", &lower, &upper);
