@@ -21,7 +21,7 @@
 
 #define MESSAGES_SET_SIZE 20
 #define CHARS_FOR_DATA_LEN_FIELD 6
-#define LIMIT_DATA_LEN 100000
+#define LIMIT_DATA_LEN 200000
 // id + req/resp + type + resp_to + is_ok + data_len
 #define HEADER_LEN (1+1+1+1+1+CHARS_FOR_DATA_LEN_FIELD)
 

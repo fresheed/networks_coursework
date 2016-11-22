@@ -7,3 +7,4 @@ primes_server
 Primes.*
 bin/
 main.c
+*.log

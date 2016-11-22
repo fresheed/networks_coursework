@@ -8,9 +8,9 @@
 /* #define RANGE_WAITING */
 #define RANGE_COMPUTED 2
 
-#define MAX_NUM 10000000
-#define MAX_RANGE_SIZE 100000
-#define MAX_NUM_LENGTH 8
+#define MAX_NUM 300000000
+#define MAX_RANGE_SIZE 200000
+#define MAX_NUM_LENGTH 9
 
 typedef struct primes_range {
   unsigned long lower_bound, upper_bound;
