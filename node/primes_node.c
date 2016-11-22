@@ -58,13 +58,6 @@ void processUserInput(){
       createMaxRequest(&msg, -1);
       message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
       printf("sending max prime request...\n");
-    } else if (strncmp(user_input, "rr", 2)==0){
-      // request range
-      int lower, upper;
-      sscanf(user_input, "rr %d %d", &lower, &upper);
-      createRangeRequest(&msg, -1, lower, upper);
-      message* put_msg=putMessageInSet(msg, &(node.set), TO_SEND, 1);
-      printf("sending range request for %d .. %d\n", lower, upper);
     } else if (strncmp(user_input, "l ", 2)==0){
       // request last N primes
       int to_show;

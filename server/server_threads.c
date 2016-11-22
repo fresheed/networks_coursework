@@ -31,37 +31,43 @@ void serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
       int max=getCurrentMaxPrime(pool);
       createMaxResponse(&resp, -1, msg->internal_id, max);
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
-    } else if (msg->info_type == RANGE_INFO) {
-      message resp;
-      int const_resp[]={7, 4, 3};
-      createRangeResponse(&resp, -1, msg->internal_id, const_resp, 3);
-      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
     } else if (msg->info_type == RECENT_INFO) {
-      int amount;
-      int shift=readNumsFromChars(msg->data, &amount, 1);
+      long amount;
+      long shift=readNumsFromChars(msg->data, &amount, 1);
       message resp;
-      int recent_primes[MAX_RANGE_SIZE];
+      long recent_primes[MAX_RANGE_SIZE];
       getRecentPrimes(amount, pool, recent_primes);
       createRecentResponse(&resp, -1, msg->internal_id, recent_primes, amount);
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
     }
     updateMessageStatus(msg, set, EMPTY_SLOT);
   } else {
-    if (msg->info_type == COMPUTE_INFO) {
-      // process response for range computation
-      int amount;
-      int shift=readNumsFromChars(msg->data, &amount, 1);
-      int bounds[2];
-      int shift2=readNumsFromChars(msg->data+shift, bounds, 2);
-      int recv_nums[MAX_RANGE_SIZE];
-      readNumsFromChars(msg->data+shift+shift2, recv_nums, amount);
-      primes_range range;
-      range.lower_bound=bounds[0];
-      range.upper_bound=bounds[1];
-      memset(range.numbers, 0, MAX_RANGE_SIZE);
-      setRangeNumbers(&range, recv_nums, amount);
-      putRangeInPool(range,  pool);
+    message* req=findMessageById(set, msg->response_to);
+    if (req==NULL){
+      printf("request not found\n");
+      updateMessageStatus(msg, set, EMPTY_SLOT);
     }
+    if (msg->info_type == COMPUTE_INFO) {
+      if (!msg->is_ok){
+	printf("Compute request failed (probably data is too long)\n");
+      } else {
+	// process response for range computation
+	long amount;	
+	long shift=readNumsFromChars(msg->data, &amount, 1);
+	long bounds[2];
+	long shift2=readNumsFromChars(msg->data+shift, bounds, 2);
+	long recv_nums[MAX_RANGE_SIZE];
+	readNumsFromChars(msg->data+shift+shift2, recv_nums, amount);
+	primes_range range;
+	range.lower_bound=bounds[0];
+	range.upper_bound=bounds[1];
+	memset(range.numbers, 0, MAX_RANGE_SIZE);
+	setRangeNumbers(&range, recv_nums, amount);
+	putRangeInPool(range,  pool);
+      }
+    }
+    updateMessageStatus(msg, set, EMPTY_SLOT);
+    updateMessageStatus(req, set, EMPTY_SLOT);
   }
 }
 

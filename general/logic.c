@@ -85,12 +85,12 @@ int checkRange2(primes_range* to_put, primes_range* prev){
   return 0;
 }
 
-int checkRange(primes_range* to_put, primes_range* prev){
-  unsigned int x=to_put->lower_bound, y=to_put->upper_bound;
-  unsigned int ll=prev->lower_bound, lu=prev->upper_bound;
-  unsigned int rl, ru;
+long checkRange(primes_range* to_put, primes_range* prev){
+  unsigned long x=to_put->lower_bound, y=to_put->upper_bound;
+  unsigned long ll=prev->lower_bound, lu=prev->upper_bound;
+  unsigned long rl, ru;
   if (prev->next_range == NULL){
-    ru=~0; // max unsigned int
+    ru=~0; // max unsigned int/long
     rl=ru-1;
   } else {
     rl=prev->next_range->lower_bound;
@@ -116,14 +116,17 @@ int checkRange(primes_range* to_put, primes_range* prev){
   return 0;
 }
 
-int validateRangeParams(int lower, int upper){
+int validateRangeParams(long lower, long upper){
   if (lower <= 0 || upper <= 0){
+    printf("Negative values not allowed\n");
     return 0;
   }
   if (lower >= upper) {
+    printf("Lower > upper\n");
     return 0;
   }
   if (upper-lower > MAX_RANGE_SIZE){
+    printf("Range size = %ld > max size\n", (upper-lower));
     return 0;
   }
   return 1;
@@ -156,28 +159,28 @@ void printPoolStatus(primes_pool* pool){
 }
 
 void printRangeStatus(primes_range* range){
-  printf("Range %d .. %d\n", range->lower_bound, range->upper_bound);
-  int* numbers=range->numbers;
-  int i;
+  printf("Range %ld .. %ld\n", range->lower_bound, range->upper_bound);
+  long* numbers=range->numbers;
+  long i;
 
   for (i = 0; i<MAX_RANGE_SIZE; i++) {
     if (numbers[i] == 0) {
       break;
     }
-    printf("%d, ", numbers[i]);
+    printf("%ld, ", numbers[i]);
   }
   printf("\n");
 }
 
 void computePrimesInRange(primes_range* range){
-  int pos=0;
-  int num;
-  int divisor;
+  long pos=0;
+  long num;
+  long divisor;
   int is_prime;
   for (num = range->lower_bound; num<=range->upper_bound; num++) {
     if (num % 2 == 0) continue;
     is_prime=1;
-    int max_divisor=(int)sqrt(num) + 1;
+    long max_divisor=(int)sqrt(num) + 1;
     for (divisor=3; divisor<=max_divisor; divisor+=2) {
       if (num % divisor == 0) {
 	is_prime=0;
@@ -191,9 +194,9 @@ void computePrimesInRange(primes_range* range){
   range->current_status=RANGE_COMPUTED;
 }
 
-void getRecentPrimes(int amount, primes_pool* pool, int* res){
+void getRecentPrimes(long amount, primes_pool* pool, long* res){
   lockMutex(&(pool->mutex));
-  int i;
+  long i;
   for (i = 0; i<amount; i++) {
     res[i]=pool->recent[i];
   }
@@ -201,9 +204,9 @@ void getRecentPrimes(int amount, primes_pool* pool, int* res){
 }
 
 void updateRecent(primes_pool* pool, primes_range* range){
-  int new_len=getPrimesCountInRange(range);
-  int kept=MAX_RANGE_SIZE-new_len;
-  int i;
+  long new_len=getPrimesCountInRange(range);
+  long kept=MAX_RANGE_SIZE-new_len;
+  long i;
   for (i = kept-1; i>=0; i--) {
     pool->recent[i+new_len]=pool->recent[i];
   }
@@ -212,16 +215,16 @@ void updateRecent(primes_pool* pool, primes_range* range){
   }
 }
 
-void setRangeNumbers(primes_range* range, int* numbers, int len){
-  int i;
+void setRangeNumbers(primes_range* range, long* numbers, long len){
+  long i;
   for (i = 0; i<len; i++) {
     range->numbers[i]=numbers[i];
   }
   range->current_status=RANGE_COMPUTED;
 }
 
-int getPrimesCountInRange(primes_range* range){
-  int i;
+long getPrimesCountInRange(primes_range* range){
+  long i;
   for (i = 0; i<MAX_RANGE_SIZE; i++) {
     if (range->numbers[i] == 0){
       return i;
@@ -230,15 +233,15 @@ int getPrimesCountInRange(primes_range* range){
   return MAX_RANGE_SIZE;
 }
 
-int getCurrentMaxPrime(primes_pool* pool){
+long getCurrentMaxPrime(primes_pool* pool){
   lockMutex(&(pool->mutex));
   primes_range* range=pool->first_range;
   while (range->next_range != NULL){
     range=range->next_range;
   }
   // now it points to last range
-  int total_in_range=getPrimesCountInRange(range);
-  int max=range->numbers[total_in_range-1];
+  long total_in_range=getPrimesCountInRange(range);
+  long max=range->numbers[total_in_range-1];
   unlockMutex(&(pool->mutex));
   return max;
 }

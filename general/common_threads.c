@@ -34,18 +34,22 @@ void* common_send_thread(void* raw_node_ptr){
 }
 
 int sendMessageContent(message* msg, int socket_fd){
-  char buf[200];
+  char buf[LIMIT_DATA_LEN+HEADER_LEN];
   const int send_flags=0;
-  int needed_len=5, actual_sent;
-  memset(buf, 0, 200);
+  int needed_len=HEADER_LEN, actual_sent;
+  memset(buf, 0, LIMIT_DATA_LEN+HEADER_LEN);
   buf[0]=msg->internal_id;
   buf[1]=msg->status_type;
   buf[2]=msg->info_type;
   buf[3]=msg->response_to;
+  buf[4]=msg->is_ok;
+  sprintf(buf+5, "%06d", msg->data_len);
   // current_status ignored!
-  buf[4]=msg->data_len;
+  /* buf[4]=msg->data_len; */
+  /* buf[5]=msg->data_len; */
+  /* buf[6]=msg->data_len; */
   if (msg->data != NULL){
-    memcpy(buf+5, msg->data, msg->data_len);
+    memcpy(buf+HEADER_LEN, msg->data, msg->data_len);
     needed_len+=msg->data_len;
   }
   if ((msg->data_len == 0) && (msg->data != NULL)){
@@ -103,10 +107,10 @@ void* common_recv_thread(void* raw_node_ptr){
 }
 
 int recvMessageContent(message* msg, int socket_fd){
-  char buf[200];
-  memset(buf, 0, 200);
-  // 1: read header of 5 bytes
-  if (!readN(socket_fd, buf, 5)){
+  char buf[LIMIT_DATA_LEN+HEADER_LEN];
+  memset(buf, 0, LIMIT_DATA_LEN+HEADER_LEN);
+  // 1: read header of ... bytes
+  if (!readN(socket_fd, buf, HEADER_LEN)){
     printf("readN failed!\n");
     return 0;
   }
@@ -114,28 +118,31 @@ int recvMessageContent(message* msg, int socket_fd){
   msg->status_type=buf[1];
   msg->info_type=buf[2];
   msg->response_to=buf[3];
+  msg->is_ok=buf[4];
   // current_status ignored!
-  msg->data_len=buf[4];
+  /* msg->data_len=buf[4]; */
+  /* msg->data_len=buf[5]; */
+  /* msg->data_len=buf[6]; */
+  sscanf(buf+5, "%06d", &(msg->data_len));  
+  printf("Will read with data len %d\n", msg->data_len);
   if (msg->data_len != 0){
-    readN(socket_fd, buf+5, msg->data_len);
-    addData(msg, buf+5, msg->data_len);
+    readN(socket_fd, buf+HEADER_LEN, msg->data_len);
+    addData(msg, buf+HEADER_LEN, msg->data_len);
   }
   printMessage(msg);
   if ((msg->data_len == 0) && (msg->data != NULL)){
     printf("Strange msg recv:\n");
     printMessage(msg);
   }
-  // 2: read add data ...
   return 1;
 }
 
 
 int readN(int socket_fd, char* read_buf, int message_len){
   //char tmp_buf[message_len];
-  char tmp_buf[200];
+  char tmp_buf[LIMIT_DATA_LEN];
   const int recv_flags=0;
   int total_read=0;
-
   memset(read_buf, 0, message_len);
   int read_status=0;
   while (total_read < message_len){

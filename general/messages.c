@@ -15,89 +15,76 @@ void createResponse(message* msg, unsigned char known_id, unsigned char response
   msg->response_to=response_to;
 }
 
-void createMaxRequest(message* msg, unsigned char known_id){
+int createMaxRequest(message* msg, unsigned char known_id){
   createRequest(msg, known_id);
   msg->info_type=MAX_INFO;
 }
 
-void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value){
+int createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, long value){
   createResponse(msg, known_id, response_to);
   msg->info_type=MAX_INFO;
   //msg->data_len=value; // temp solution, should be passed via data
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
-  int ivalue=value;
+  char data_buffer[LIMIT_DATA_LEN];
+  memset(data_buffer, 0, LIMIT_DATA_LEN);
+  long ivalue=value;
   writeNumsToChars(&ivalue, 1, data_buffer);
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
-void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound){
-  createRequest(msg, known_id);
-  msg->info_type=RANGE_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
-  sprintf(data_buffer, "%d %d", lower_bound, upper_bound);
-  addData(msg, data_buffer, strlen(data_buffer));
-}
-
-void createRangeResponse(message* msg, unsigned char known_id, unsigned char response_to, int* primes, int primes_amount){
-  createResponse(msg, known_id, response_to);
-  msg->info_type=RANGE_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
-  char* write_ptr=data_buffer;
-
-  int appended=writeNumsToChars(&primes_amount, 1, write_ptr);
-  write_ptr+=appended;
-  appended=writeNumsToChars(primes, primes_amount, write_ptr);
-
-  addData(msg, data_buffer, strlen(data_buffer));
-}
-
-void createComputeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound){
+int createComputeRequest(message* msg, unsigned char known_id, long lower_bound, long upper_bound){
   createRequest(msg, known_id);
   msg->info_type=COMPUTE_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
-  sprintf(data_buffer, "%d %d", lower_bound, upper_bound);
+  char data_buffer[LIMIT_DATA_LEN];
+  memset(data_buffer, 0, LIMIT_DATA_LEN);
+  sprintf(data_buffer, "%ld %ld", lower_bound, upper_bound);
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
-void createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range range){
+int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range){
   createResponse(msg, known_id, response_to);
   msg->info_type=COMPUTE_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
+  printf("LDL: %ld\n", (long)LIMIT_DATA_LEN);
+  //char data_buffer[LIMIT_DATA_LEN];
+  char* data_buffer=(char*)malloc(LIMIT_DATA_LEN*sizeof(char));
+  memset(data_buffer, 0, LIMIT_DATA_LEN);
   char* write_ptr=data_buffer;
 
-  int primes_amount=getPrimesCountInRange(&range);
-  int appended=writeNumsToChars(&primes_amount, 1, write_ptr);
+  long primes_amount=getPrimesCountInRange(range);
+  long appended=writeNumsToChars(&primes_amount, 1, write_ptr);
   write_ptr+=appended;
-  int header[]={range.lower_bound, range.upper_bound};
+  long header[]={range->lower_bound, range->upper_bound};
   appended=writeNumsToChars(header, 2, write_ptr);
   write_ptr+=appended;
-  appended=writeNumsToChars(range.numbers, primes_amount, write_ptr);
+  printf("Writing...\n");
+  appended=writeNumsToChars(range->numbers, primes_amount, write_ptr);
+  printf("Appended: %ld\n", appended);
   if (appended < 0){
     printf("Buffer size exceeded but IGNORED!\n");
+    msg->is_ok=0;
+    msg->data=NULL;
+    msg->data_len=0;
+    free(data_buffer);
+    return;
   }
 
   addData(msg, data_buffer, strlen(data_buffer));
+  free(data_buffer);
 }
 
-void createRecentRequest(message* msg, unsigned char known_id, int amount){
+int createRecentRequest(message* msg, unsigned char known_id, long amount){
   createRequest(msg, known_id);
   msg->info_type=RECENT_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
-  sprintf(data_buffer, "%d ", amount);
+  char data_buffer[LIMIT_DATA_LEN];
+  memset(data_buffer, 0, LIMIT_DATA_LEN);
+  sprintf(data_buffer, "%ld ", amount);
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
-void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount){
+int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, long* nums, long amount){
   createResponse(msg, known_id, response_to);
   msg->info_type=RECENT_INFO;
-  char data_buffer[200];
-  memset(data_buffer, 0, 200);
+  char data_buffer[LIMIT_DATA_LEN];
+  memset(data_buffer, 0, LIMIT_DATA_LEN);
   char* write_ptr=data_buffer;
 
   int appended=writeNumsToChars(&amount, 1, write_ptr);
@@ -105,39 +92,44 @@ void createRecentResponse(message* msg, unsigned char known_id, unsigned char re
   appended=writeNumsToChars(nums, amount, write_ptr);
   if (appended < 0){
     printf("Buffer size exceeded but IGNORED!\n");
+    msg->is_ok=0;
+    msg->data=NULL;
+    msg->data_len=0;
+    return;
   }
 
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
-void createInitShutdownRequest(message* msg, unsigned char known_id, int amount){
+int createInitShutdownRequest(message* msg, unsigned char known_id, int amount){
   createRequest(msg, known_id);
   msg->info_type=INIT_SHUTDOWN;
+  return 1;
 }
 
 
-int writeNumsToChars(int* nums, int amount, char* raw){
-  int i;
-  int appended;
+long writeNumsToChars(long* nums, long amount, char* raw){
+  long i;
+  long appended;
   char* write_ptr=raw;
   for (i=0; i<amount; i++){
-    appended=sprintf(write_ptr, "%d ", nums[i]);
+    appended=sprintf(write_ptr, "%ld ", nums[i]);
     write_ptr+=appended;
+    if (write_ptr-raw > LIMIT_DATA_LEN){
+      printf("Tried to write over %d, stopping\n", LIMIT_DATA_LEN);
+      return -1;
+    }
   }
-  int total_wrote=write_ptr-raw;
-  if (total_wrote > 200){
-    return -1;
-  }
-  return total_wrote;
+  return (write_ptr-raw);
 }
 
-int readNumsFromChars(char* raw, int* nums, int amount){
-  int i;
-  int appended;
+long readNumsFromChars(char* raw, long* nums, long amount){
+  long i;
+  long appended;
   char* write_ptr=raw;
   for (i=0; i<amount; i++){
     // %n to determine amount of bytes read
-    sscanf(write_ptr, "%d %n", &(nums[i]), &appended);
+    sscanf(write_ptr, "%ld %ln", &(nums[i]), &appended);
     write_ptr+=appended;
   }
   return (write_ptr-raw);
@@ -147,6 +139,7 @@ int readNumsFromChars(char* raw, int* nums, int amount){
 void fillGeneral(message* msg, unsigned char known_id){
   msg->data=NULL;
   msg->data_len=0;
+  msg->is_ok=1;
   if (known_id >= 0){
     msg->internal_id=known_id;
   } else {
@@ -155,6 +148,7 @@ void fillGeneral(message* msg, unsigned char known_id){
 }
 
 void addData(message* msg, char* new_data, unsigned int len){
+
   msg->data=(char*)malloc((len+1)*sizeof(char));
   memset(msg->data, 0, len+1);
   memcpy(msg->data, new_data, len);
@@ -199,7 +193,6 @@ message* lockNextMessage(messages_set* set, char cur_status){
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
-    printf("Before blocking\n");
     blockOnCondition(was_changed, mutex);
     if (!(set->is_active)){
       unlockMutex(mutex);
@@ -295,6 +288,7 @@ void initMessagesSet(messages_set* set){
 
 
 void printMessage(message* msg){
+  printf("%ld, %ld\n", sizeof(int), sizeof(long));
   printf("IntID: %d, ST: %d, IT: %d, RT: %d, CS: %d, DL: %d\n",
 	 msg->internal_id, msg->status_type, msg->info_type,
 	 msg->response_to, msg->current_status, msg->data_len);

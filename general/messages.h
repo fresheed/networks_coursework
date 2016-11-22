@@ -9,7 +9,6 @@
 #define RESPONSE 1
 
 #define MAX_INFO 10
-#define RANGE_INFO 1
 #define COMPUTE_INFO 2
 #define RECENT_INFO 3
 #define INIT_SHUTDOWN 4
@@ -20,16 +19,21 @@
 #define WAITS_RESPONSE 3
 #define OWNED 4
 
-#define MESSAGES_SET_SIZE 10
+#define MESSAGES_SET_SIZE 20
+#define CHARS_FOR_DATA_LEN_FIELD 6
+#define LIMIT_DATA_LEN 100000
+// id + req/resp + type + resp_to + is_ok + data_len
+#define HEADER_LEN (1+1+1+1+1+CHARS_FOR_DATA_LEN_FIELD)
 
 typedef struct message {
-char internal_id;
-char status_type;
-char info_type;
-char response_to;
-char current_status;
-unsigned char data_len;
-char* data;
+  char internal_id;
+  char status_type;
+  char info_type;
+  char response_to;
+  char is_ok;
+  char current_status;
+  unsigned int data_len;
+  char* data;
 } message;
 
 typedef struct messages_set {
@@ -37,7 +41,9 @@ char next_id;
 unsigned int is_active;
 message messages[MESSAGES_SET_SIZE];
 unsigned int to_send, to_put, to_process;
+//pthread_mutex_t messages_mutex;
 u_mutex messages_mutex;
+//pthread_cond_t status_changed;
 u_condition status_changed;
 } messages_set;
 
@@ -46,17 +52,15 @@ u_condition status_changed;
 void createRequest(message* msg, unsigned char known_id);
 void createResponse(message* msg, unsigned char known_id, unsigned char response_to);
 
-void createMaxRequest(message* msg, unsigned char known_id);
-void createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, char value);
-void createRangeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
-void createRangeResponse(message* msg, unsigned char known_id, unsigned char response_to, int* primes, int primes_amount);
-void createComputeRequest(message* msg, unsigned char known_id, int lower_bound, int upper_bound);
-void createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range range);
-void createRecentRequest(message* msg, unsigned char known_id, int amount);
-void createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, int* nums, int amount);
+int createMaxRequest(message* msg, unsigned char known_id);
+int createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, long value);
+int createComputeRequest(message* msg, unsigned char known_id, long lower_bound, long upper_bound);
+int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range);
+int createRecentRequest(message* msg, unsigned char known_id, long amount);
+int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, long* nums, long amount);
 
-int writeNumsToChars(int* nums, int amount, char* raw);
-int readNumsFromChars(char* raw, int* nums, int amount);
+long writeNumsToChars(long* nums, long amount, char* raw);
+long readNumsFromChars(char* raw, long* nums, long amount);
 
 void fillGeneral(message* msg, unsigned char known_id);
 void addData(message* msg, char* data, unsigned int len);

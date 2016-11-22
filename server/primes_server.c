@@ -24,6 +24,9 @@ int main(){
   }
   initPool(&pool);
 
+  printf("Int: %ld, long: %d\n", sizeof(int), sizeof(long));
+  printf("Range restrict: %ld to %ld, max range size is %ld\n", 
+	 0, MAX_NUM, MAX_RANGE_SIZE);
   processAdminInput();
 
   finalizeServer();
@@ -57,8 +60,8 @@ void processAdminInput(){
       printNodes(&nodes_params);
       printPoolStatus(&pool);
     } else if (strncmp(admin_input, "cr", 2)==0) {
-      int lower, upper;
-      sscanf(admin_input, "cr %d %d", &lower, &upper);
+      long lower, upper;
+      sscanf(admin_input, "cr %ld %ld", &lower, &upper);
       if (!validateRangeParams(lower, upper)){
 	printf("Given range cannot be computed\n");
 	continue;

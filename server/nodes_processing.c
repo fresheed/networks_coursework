@@ -33,7 +33,7 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
   unlockMutex(mutex);
 }
 
-int assignTaskToNextNode(int last_executor, unsigned int lower_bound, unsigned int upper_bound, nodes_info* nodes_params){
+int assignTaskToNextNode(int last_executor, long lower_bound, long upper_bound, nodes_info* nodes_params){
   node_data* nodes=nodes_params->nodes;
   int max_nodes=nodes_params->max_nodes;
   u_mutex* mutex=&(nodes_params->nodes_mutex);
