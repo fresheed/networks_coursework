@@ -21,7 +21,7 @@ void* node_proc_thread(void* raw_node_ptr){
     printf("Message processed\n");
     if (!continue_proc){
       printf("Shutting down connection...\n");
-      shutdownWr(node->socket_fd);
+      shutdownWr(node->conn);
     }
   }
   printf("Stopped to process this node\n");

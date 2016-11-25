@@ -1,5 +1,6 @@
 //#include <pthread.h>
 #include "general/messages.h"
+#include "general/init_sockets.h"
 
 #ifndef node_structs
 #define node_structs
@@ -8,6 +9,6 @@
 
 void finalizeCurrentNode();
 
-int initializeCurrentNode();
+int initializeCurrentNode(socket_conn conn);
 
 void processUserInput();

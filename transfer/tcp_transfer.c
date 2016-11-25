@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-int sendMessageContent(message* msg, int socket_fd){
+int sendMessageContent(message* msg, socket_conn conn){
+  int socket_fd=conn.socket_fd;
   char buf[LIMIT_DATA_LEN+HEADER_LEN];
   const int send_flags=0;
   int needed_len=HEADER_LEN, actual_sent;
@@ -39,11 +40,12 @@ void endCommunication(node_data* node){
 
   // at this point peer should sent shutdown already
 
-  shutdownWr(node->socket_fd);
-  socketClose(node->socket_fd);
+  shutdownWr(node->conn);
+  socketClose(node->conn);
 }
 
-int recvMessageContent(message* msg, int socket_fd){
+int recvMessageContent(message* msg, socket_conn conn){
+  int socket_fd=conn.socket_fd;
   char buf[LIMIT_DATA_LEN+HEADER_LEN];
   memset(buf, 0, LIMIT_DATA_LEN+HEADER_LEN);
   // 1: read header of ... bytes
@@ -112,12 +114,12 @@ int readN(int socket_fd, char* read_buf, int message_len){
 void finalizeCurrentNode(node_data* node){
   printf("started to finalize current node\n");
 
-  shutdownWr(node->socket_fd);
+  shutdownWr(node->conn);
 
   waitForThread(&(node->recv_thread));
   printf("node threads finished\n");
 
-  socketClose(node->socket_fd);
+  socketClose(node->conn);
   finalizeMessagesSet(&(node->set));
 
   printf("finalized current node\n");
@@ -125,18 +127,18 @@ void finalizeCurrentNode(node_data* node){
 
 void finalizeServer(server_data* server_params, nodes_info* nodes_params,
 		    primes_pool* pool){
-  unsigned int server_socket_fd=server_params->listen_socket_fd;
-  printf("Shutting down server socket %d\n", server_socket_fd);
+  socket_conn server_conn=server_params->listen_conn;
+  printf("Shutting down server socket %d\n", server_conn.socket_fd);
   // need to do this to unblock server
   closePendingConnections(nodes_params, pool);
-  shutdownRdWr(server_socket_fd);
+  shutdownRdWr(server_conn);
 
   printf("Joining accept thread\n");
   waitForThread(&(server_params->accept_thread));
   destroyCondition(&(nodes_params->nodes_refreshed));
 
   printf("Closing accept socket\n");
-  socketClose(server_socket_fd);
+  socketClose(server_conn);
 
   destroyPool(pool);
 
@@ -148,8 +150,8 @@ void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
   u_mutex* mutex=&(nodes_params->nodes_mutex);
 
   lockMutex(mutex);
-  int pending=nodes_params->pending_socket;
-  if (pending < 0) {
+  socket_conn pending_conn=nodes_params->pending_conn;
+  if (pending_conn.socket_fd < 0) {
     printf("No pending connections found\n");
     unlockMutex(mutex);
     return;
@@ -157,7 +159,7 @@ void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
   printf("Temporary creating and closing pending...\n");
   node_data temp_node;
   int temp_id=10;
-  initNewNode(&temp_node, NULL, temp_id, pending, NULL);
+  initNewNode(&temp_node, NULL, temp_id, pending_conn, NULL);
   
   message msg;
   fillGeneral(&msg, -1);
@@ -166,7 +168,7 @@ void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
   waitForThread(&(temp_node.recv_thread));
   finalizeMessagesSet(&(temp_node.set));
 
-  nodes_params->pending_socket=-1;
+  nodes_params->pending_conn=err_socket;
 
   signalOne(signal);
   unlockMutex(mutex);

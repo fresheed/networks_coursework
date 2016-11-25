@@ -1,3 +1,6 @@
+#include <netinet/in.h>
+
+
 #ifdef _WIN32
 
 #include "general/win_sockets.h"
@@ -7,3 +10,4 @@
 #include "general/linux_sockets.h"
 
 #endif
+

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-//#include <sys/socket.h>
+#include "general/init_sockets.h"
 #include "server/primes_server.h"
 #include "node/primes_node.h"
 #include "general/common_threads.h"
@@ -24,14 +24,14 @@ int main(int argc, char* argv[]){
   }
   printf("Trying to connect %s:%d\n", hostname, port);
 
-  int socket_fd=connectToServer(hostname, port);
+  socket_conn conn=connectToServer(hostname, port);
 
-  if (socket_fd < 0 ){
+  if (conn.socket_fd < 0 ){
     printf("Server connection failed \n");
     exit(1);
   }
 
-  if (!initializeCurrentNode(socket_fd)){
+  if (!initializeCurrentNode(conn)){
     printf("Node initialization failed\n");
     exit(1);
   }
@@ -75,9 +75,9 @@ void processUserInput(){
   }
 }
 
-int initializeCurrentNode(int fd){
+int initializeCurrentNode(socket_conn conn){
   node.id=-1; // we don't care for id at node side
-  node.socket_fd=fd;
+  node.conn=conn;
 
   initMessagesSet(&(node.set));
   runThread(&(node.send_thread), &common_send_thread, (void*)(&node));

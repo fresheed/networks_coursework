@@ -108,10 +108,10 @@ void processAdminInput(){
 
 void* runAcceptNodes(){
   while(1){
-    int tmp_fd=acceptClient(server_params.listen_socket_fd);
-    if (tmp_fd > 0){
+    socket_conn new_conn=acceptClient(server_params.listen_conn);
+    if (new_conn.socket_fd > 0){
       cleanupZombieNodes(&nodes_params);
-      addNewNode(&nodes_params, tmp_fd, &pool);
+      addNewNode(&nodes_params, new_conn, &pool);
     } else {
       printf("Accept failed\n");
       break;
@@ -134,16 +134,16 @@ int initializeServer(){
     nodes[i].id=0;
   }
   nodes_params.unique_id_counter=1;
-  nodes_params.pending_socket=-1;
+  nodes_params.pending_conn=err_socket;
 
   createMutex(&nodes_params.nodes_mutex);
   createCondition(&nodes_params.nodes_refreshed);
 
-  int listen_fd=prepareServerSocket();
-  if (listen_fd < 0){
+  socket_conn listen_conn=prepareTCPServerSocket();
+  if (listen_conn.socket_fd < 0){
     return 0;
   }
-  server_params.listen_socket_fd=listen_fd;
+  server_params.listen_conn=listen_conn;
 
   runThread(&server_params.accept_thread, &runAcceptNodes, NULL);
 

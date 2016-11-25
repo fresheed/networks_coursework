@@ -10,7 +10,7 @@
 
 void* common_send_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
-  int socket_fd=node->socket_fd;
+  socket_conn conn=node->conn;
   messages_set* set=&(node->set);
   int id=node->id;
   while(1){
@@ -21,7 +21,7 @@ void* common_send_thread(void* raw_node_ptr){
     }
     /* printf("Sending:\n"); */
     /* printMessage(msg); */
-    if (!(sendMessageContent(msg, socket_fd))){
+    if (!(sendMessageContent(msg, conn))){
       printf("Send to node %d failed", id);
       // markSetInactive(set); - should be done only by recv thread
       break;
@@ -41,11 +41,11 @@ void* common_recv_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   char buffer[100];
   int id=node->id;
-  int socket_fd=node->socket_fd;
+  socket_conn conn=node->conn;
   while (1){
     message msg;
     fillGeneral(&msg, -1);
-    int res=recvMessageContent(&msg, socket_fd);
+    int res=recvMessageContent(&msg, conn);
     if (!res){
       printf("Read from node %d failed\n", id);
       markSetInactive(set);

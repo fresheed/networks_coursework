@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <netdb.h>
+#include "general/linux_sockets.h"
 
 void setServerAddressParams(struct sockaddr_in* server_address, int port){
   memset(server_address, 0, sizeof(*server_address));
@@ -25,7 +26,17 @@ void setServerAddressParamsForNode(struct sockaddr_in* server_address,  struct h
 
 }
 
-int prepareServerSocket(){
+socket_conn prepareServerSocket(){
+#ifdef TCP_TRANSFER
+  return prepareTCPServerSocket();
+#else
+#ifdef UDP_TRANSFER
+  return prepareTCPServerSocket();
+#endif
+#endif
+}
+
+socket_conn prepareTCPServerSocket(){
   const int accept_port=3451;
   struct sockaddr_in server_address;
   printf("Initializing server...\n");
@@ -34,41 +45,64 @@ int prepareServerSocket(){
   int server_socket_fd=socket(AF_INET, SOCK_STREAM, 0);
   if (server_socket_fd < 0) {
     perror("Error on socket creation\n");
-    return -1;
+    return err_socket;
   }
   if (bind(server_socket_fd, (struct sockaddr *)&server_address,
 	   sizeof(server_address)) < 0){
     perror("Error on bind\n");
-    return -1;
+    return err_socket;
   }
 
   listen(server_socket_fd, 1); 
 
-  return server_socket_fd;
+  socket_conn conn = {.socket_fd=server_socket_fd};
+
+  return conn;
 }
 
+socket_conn acceptClient(socket_conn server_conn){
+#ifdef TCP_TRANSFER
+  return acceptTCPClient(server_conn);
+#else
+#ifdef UDP_TRANSFER
+  return acceptUDPClient(server_conn);
+#endif
+#endif
+}
 
-int acceptClient(int server_socket_fd){
+socket_conn acceptTCPClient(socket_conn server_conn){
   struct sockaddr_in client_address;
   int client_address_size=sizeof(client_address);
   
-  printf("Waiting for client to connect at socket %d...\n", server_socket_fd);
-  int client_socket_fd=accept(server_socket_fd, (struct sockaddr*)&client_address, &client_address_size);
+  printf("Waiting for client to connect at socket %d...\n", server_conn.socket_fd);
+  int client_socket_fd=accept(server_conn.socket_fd, (struct sockaddr*)&client_address, &client_address_size);
 
-  return client_socket_fd;
+  socket_conn conn = {.socket_fd=client_socket_fd};
+
+  return conn;
 }
 
-int connectToServer(char* hostname, int port){
+socket_conn connectToServer(char* hostname, int port){
+#ifdef TCP_TRANSFER
+  return connectToTCPServer(hostname, port);
+#else
+#ifdef UDP_TRANSFER
+  return connectToUDPServer(hostname, port);
+#endif
+#endif
+}
+
+socket_conn connectToTCPServer(char* hostname, int port){
   int node_socket_fd=socket(AF_INET, SOCK_STREAM, 0);
   if (node_socket_fd < 0){
     printf("error opening node socket!\n");
-    return -1;
+    return err_socket;
   }
 
   struct hostent* server=gethostbyname(hostname);
   if (server==NULL){
     printf("error resolving hostname!\n");
-    return -1;
+    return err_socket;
   }  
 
   struct sockaddr_in server_address;
@@ -76,21 +110,23 @@ int connectToServer(char* hostname, int port){
 
   int c=connect(node_socket_fd,(struct sockaddr *)&server_address, sizeof(server_address));
   if (c < 0)
-    return -1;
-  return  node_socket_fd;
+    return err_socket;
+
+  socket_conn conn={.socket_fd=node_socket_fd};
+  return conn;
 }
 
 
-void shutdownWr(int socket_fd){
-  shutdown(socket_fd, SHUT_WR);
+void shutdownWr(socket_conn conn){
+  shutdown(conn.socket_fd, SHUT_WR);
 }
 
-void shutdownRdWr(int socket_fd){
-  shutdown(socket_fd, SHUT_RDWR);
+void shutdownRdWr(socket_conn conn){
+  shutdown(conn.socket_fd, SHUT_RDWR);
 }
 
-void socketClose(int socket_fd){
-  close(socket_fd);  
+void socketClose(socket_conn conn){
+  close(conn.socket_fd);  
 }
 
 void initSocketsRuntime(){

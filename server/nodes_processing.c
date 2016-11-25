@@ -4,17 +4,18 @@
 #include "general/common_threads.h"
 #include "general/init_sockets.h"
 
-void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
+void addNewNode(nodes_info* nodes_params, socket_conn new_conn, primes_pool* pool){
   node_data* nodes=nodes_params->nodes;
   u_mutex* mutex=&(nodes_params->nodes_mutex);
   u_condition* signal=&(nodes_params->nodes_refreshed); 
 
   lockMutex(mutex);
-  nodes_params->pending_socket=new_socket_fd;
+  
+  nodes_params->pending_conn=new_conn;
 
   int slot_ind;
   while ((slot_ind=getNewNodeIndex(nodes, nodes_params->max_nodes)) == -1){
-    if (nodes_params->pending_socket == -1){ // no pending now
+    if (nodes_params->pending_conn.socket_fd == -1){ // no pending now
       printf("Pending socket closed\n");
       unlockMutex(mutex);
       return;
@@ -25,10 +26,10 @@ void addNewNode(nodes_info* nodes_params, int new_socket_fd, primes_pool* pool){
 
   initNewNode(&(nodes[slot_ind]), nodes_params,
 	      nodes_params->unique_id_counter++,
-	      nodes_params->pending_socket, pool);
+	      nodes_params->pending_conn, pool);
   printf("Node %d: id=%d\n", slot_ind, nodes[slot_ind].id);
 
-  nodes_params->pending_socket=-1;
+  nodes_params->pending_conn=err_socket;
 
   unlockMutex(mutex);
 }
@@ -167,9 +168,9 @@ int getIndexById(node_data* nodes, int count, int id){
   return -1;
 }
 
-void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, unsigned int fd, primes_pool* pool){
+void initNewNode(node_data* node, nodes_info* nodes_params, unsigned int id, socket_conn conn, primes_pool* pool){
   node->id=id;
-  node->socket_fd=fd;
+  node->conn=conn;
 
   initMessagesSet(&(node->set));
 
@@ -191,7 +192,7 @@ void printNodes(nodes_info* nodes_params){
       printf("%d \n", nodes[i].id);
     }
   }
-  printf("Pending: %d\n", (nodes_params->pending_socket==-1)?0:1);
+  printf("Pending: %d\n", (nodes_params->pending_conn.socket_fd==-1)?0:1);
 
   unlockMutex(mutex);
 }
