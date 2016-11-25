@@ -144,35 +144,7 @@ void cleanupZombieNodes(nodes_info* nodes_params){
 }
 
 
-void closePendingConnections(nodes_info* nodes_params, primes_pool* pool){
-  u_condition* signal=&(nodes_params->nodes_refreshed); 
-  u_mutex* mutex=&(nodes_params->nodes_mutex);
 
-  lockMutex(mutex);
-  int pending=nodes_params->pending_socket;
-  if (pending < 0) {
-    printf("No pending connections found\n");
-    unlockMutex(mutex);
-    return;
-  }
-  printf("Temporary creating and closing pending...\n");
-  node_data temp_node;
-  int temp_id=10;
-  initNewNode(&temp_node, NULL, temp_id, pending, NULL);
-  
-  message msg;
-  fillGeneral(&msg, -1);
-  createInitShutdownRequest(&msg, -1);
-  message* put_msg=putMessageInSet(msg, &(temp_node.set), TO_SEND, 1);
-  waitForThread(&(temp_node.recv_thread));
-  finalizeMessagesSet(&(temp_node.set));
-
-  /* close(nodes_params->pending_socket); */
-  nodes_params->pending_socket=-1;
-
-  signalOne(signal);
-  unlockMutex(mutex);
-}
 
 int getNewNodeIndex(node_data* nodes, int count){
   int i;

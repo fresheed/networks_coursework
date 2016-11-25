@@ -9,6 +9,7 @@
 #include "server/nodes_processing.h"
 #include "general/logic.h"
 #include "server_threads.h"
+#include "transfer/net_transfer.h"
 
 server_data server_params;
 #define MAX_NODES 5
@@ -28,7 +29,7 @@ int main(){
 	 0, (long)MAX_NUM, (long)MAX_RANGE_SIZE);
   processAdminInput();
 
-  finalizeServer();
+  finalizeServer(&server_params, &nodes_params, &pool);
   finalizeSocketsRuntime();
   printf("Server stopped\n");
 
@@ -148,27 +149,6 @@ int initializeServer(){
   return 1;
 }
 
-void finalizeServer(){
-  unsigned int server_socket_fd=server_params.listen_socket_fd;
-  printf("Shutting down server socket %d\n", server_socket_fd);
-  // need to do this to unblock server
-  closePendingConnections(&nodes_params, &pool);
-  //shutdown(server_socket_fd, SHUT_RDWR);
-  shutdownRdWr(server_socket_fd);
-
-  printf("Joining accept thread\n");
-  waitForThread(&server_params.accept_thread);
-  destroyCondition(&nodes_params.nodes_refreshed);
-
-  printf("Closing accept socket\n");
-//  close (server_socket_fd);
-  socketClose(server_socket_fd);
-
-
-  destroyPool(&pool);
-
-  destroyMutex(&nodes_params.nodes_mutex);
-}
 
 
 

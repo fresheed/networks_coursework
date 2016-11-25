@@ -8,6 +8,7 @@
 #include "general/common_threads.h"
 #include "general/messages.h"
 #include "node/node_threads.h"
+#include "transfer/net_transfer.h"
 
 node_data node;
 
@@ -37,7 +38,7 @@ int main(int argc, char* argv[]){
 
   processUserInput();
   finalizeSocketsRuntime();
-  finalizeCurrentNode();
+  finalizeCurrentNode(&node);
   return 0;
 }
 
@@ -88,21 +89,3 @@ int initializeCurrentNode(int fd){
 
   return 1;
 }
-
-void finalizeCurrentNode(){
-  printf("started to finalize current node\n");
-
-  //close(node.socket_fd);
-
-  //shutdown(node.socket_fd, SHUT_WR);
-  shutdownWr(node.socket_fd);
-
-  waitForThread(&(node.recv_thread));
-  printf("node threads finished\n");
-
-  socketClose(node.socket_fd);
-  finalizeMessagesSet(&(node.set));
-
-  printf("finalized current node\n");
-}
-
