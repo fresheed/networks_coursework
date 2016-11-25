@@ -57,9 +57,12 @@ void processAdminInput(){
 	  kickSingleNode(&nodes_params, id_to_kick);
 	}
       }
-    } else if (strncmp(admin_input, "st", 2)==0) {
+    } else if (strncmp(admin_input, "stf", 3)==0) {
       printNodes(&nodes_params);
-      printPoolStatus(&pool);
+      printPoolStatus(&pool, 1);
+    } else if (strncmp(admin_input, "sts", 3)==0) {
+      printNodes(&nodes_params);
+      printPoolStatus(&pool, 0);
     } else if (strncmp(admin_input, "cr1", 3)==0) {
       test_lower=200000000;
       test_upper=200200000;

@@ -69,7 +69,6 @@ int recvMessageContent(message* msg, int socket_fd){
     readN(socket_fd, buf+HEADER_LEN, msg->data_len);
     addData(msg, buf+HEADER_LEN, msg->data_len);
   }
-  printMessage(msg);
   if ((msg->data_len == 0) && (msg->data != NULL)){
     printf("Strange msg recv:\n");
     printMessage(msg);

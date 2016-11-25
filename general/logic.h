@@ -32,8 +32,8 @@ void destroyPool(primes_pool* pool);
 void putRangeInPool(primes_range range, primes_pool* pool);
 long checkRange(primes_range* to_put, primes_range* prev);
 
-void printPoolStatus(primes_pool* pool);
-void printRangeStatus(primes_range* range);
+void printPoolStatus(primes_pool* pool, int print_numbers);
+void printRangeStatus(primes_range* range, int print_numbers);
 
 void getRecentPrimes(long amount, primes_pool* pool, long* res);
 void updateRecent(primes_pool* pool, primes_range* range);

@@ -64,7 +64,7 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
   cur_range->next_range=new_range;
 
   printf("Added range:\n");
-  printRangeStatus(new_range);
+  printRangeStatus(new_range, 0);
 
   updateRecent(pool, new_range);
   unlockMutex(&(pool->mutex));
@@ -148,18 +148,21 @@ void destroyPool(primes_pool* pool){
   destroyMutex(&(pool->mutex));
 }
 
-void printPoolStatus(primes_pool* pool){
+void printPoolStatus(primes_pool* pool, int print_numbers){
   lockMutex(&(pool->mutex));
   primes_range* range=pool->first_range;
   while (range != NULL){
-    printRangeStatus(range);
+    printRangeStatus(range, print_numbers);
     range=range->next_range;
   }
   unlockMutex(&(pool->mutex));
 }
 
-void printRangeStatus(primes_range* range){
+void printRangeStatus(primes_range* range, int print_numbers){
   printf("Range %ld .. %ld\n", range->lower_bound, range->upper_bound);
+  if (!print_numbers){
+    return;
+  }
   long* numbers=range->numbers;
   long i;
 
