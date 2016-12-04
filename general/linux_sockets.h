@@ -23,9 +23,9 @@ socket_conn acceptClient(socket_conn server_conn);
 socket_conn acceptTCPClient(socket_conn server_conn);
 socket_conn acceptUDPClient(socket_conn server_conn);
 
-void shutdownWr(socket_conn sock);
-void shutdownRdWr(socket_conn sock);
-void socketClose(socket_conn sock);
+void shutdownWr(int fd);
+void shutdownRdWr(int fd);
+void socketClose(int fd);
 void initSocketsRuntime();
 void finalizeSocketsRuntime();
 

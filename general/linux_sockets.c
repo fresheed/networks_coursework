@@ -117,16 +117,16 @@ socket_conn connectToTCPServer(char* hostname, int port){
 }
 
 
-void shutdownWr(socket_conn conn){
-  shutdown(conn.socket_fd, SHUT_WR);
+void shutdownWr(int fd){
+  shutdown(fd, SHUT_WR);
 }
 
-void shutdownRdWr(socket_conn conn){
-  shutdown(conn.socket_fd, SHUT_RDWR);
+void shutdownRdWr(int fd){
+  shutdown(fd, SHUT_RDWR);
 }
 
-void socketClose(socket_conn conn){
-  close(conn.socket_fd);  
+void socketClose(int fd){
+  close(fd);  
 }
 
 void initSocketsRuntime(){

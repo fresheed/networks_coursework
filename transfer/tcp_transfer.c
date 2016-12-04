@@ -24,20 +24,20 @@ void endCommunication(node_data* node){
 
   // at this point peer should sent shutdown already
 
-  shutdownWr(node->conn);
-  socketClose(node->conn);
+  shutdownWr(node->conn.socket_fd);
+  socketClose(node->conn.socket_fd);
 }
 
 
 void finalizeCurrentNode(node_data* node){
   printf("started to finalize current node\n");
 
-  shutdownWr(node->conn);
+  shutdownWr(node->conn.socket_fd);
 
   waitForThread(&(node->recv_thread));
   printf("node threads finished\n");
 
-  socketClose(node->conn);
+  socketClose(node->conn.socket_fd);
   finalizeMessagesSet(&(node->set));
 
   printf("finalized current node\n");
@@ -49,14 +49,14 @@ void finalizeServer(server_data* server_params, nodes_info* nodes_params,
   printf("Shutting down server socket %d\n", server_conn.socket_fd);
   // need to do this to unblock server
   closePendingConnections(nodes_params, pool);
-  shutdownRdWr(server_conn);
+  shutdownRdWr(server_conn.socket_fd);
 
   printf("Joining accept thread\n");
   waitForThread(&(server_params->accept_thread));
   destroyCondition(&(nodes_params->nodes_refreshed));
 
   printf("Closing accept socket\n");
-  socketClose(server_conn);
+  socketClose(server_conn.socket_fd);
 
   destroyPool(pool);
 
