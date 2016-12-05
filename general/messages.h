@@ -7,11 +7,13 @@
 
 #define REQUEST 10
 #define RESPONSE 1
+#define ACK 2
 
 #define MAX_INFO 10
 #define COMPUTE_INFO 2
 #define RECENT_INFO 3
 #define INIT_SHUTDOWN 4
+//#define REGISTER_CLIENT 5
 
 #define EMPTY_SLOT 10
 #define TO_PROCESS 1
@@ -41,9 +43,7 @@ char next_id;
 unsigned int is_active;
 message messages[MESSAGES_SET_SIZE];
 unsigned int to_send, to_put, to_process;
-//pthread_mutex_t messages_mutex;
 u_mutex messages_mutex;
-//pthread_cond_t status_changed;
 u_condition status_changed;
 } messages_set;
 
@@ -58,6 +58,8 @@ int createComputeRequest(message* msg, unsigned char known_id, long lower_bound,
 int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range);
 int createRecentRequest(message* msg, unsigned char known_id, long amount);
 int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, long* nums, long amount);
+int createInitShutdownRequest(message* msg, unsigned char known_id);
+//int createRegisterClientRequest(message* msg, unsigned char known_id, int amount);
 
 long writeNumsToChars(long* nums, long amount, char* raw);
 long readNumsFromChars(char* raw, long* nums, long amount);

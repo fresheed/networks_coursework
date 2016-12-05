@@ -44,7 +44,6 @@ int assignTaskToNextNode(int last_executor, long lower_bound, long upper_bound, 
   int index=last_executor, count=0;
   int id;
   while (count<max_nodes){
-    printf("check for index %d: %d\n", index, nodes[index].id);
     if (nodes[index].id>0){ // node is active
       //id=nodes[index].id;
       break;
@@ -103,6 +102,8 @@ void processKick(nodes_info* nodes_params, int id){
 
   finalizeMessagesSet(&(nodes[index].set));
 
+  // pipes should be closed already in recv thread
+
   nodes[index].id=0;
   printf("Node %d kicked\n", id);
 }
@@ -158,10 +159,20 @@ int getNewNodeIndex(node_data* nodes, int count){
 }
 
 int getIndexById(node_data* nodes, int count, int id){
-  printf("looking for %d\n", id);
   int i;
   for (i=0; i<count; i++){
     if (nodes[i].id == id){
+      return i;
+    }
+  }
+  return -1;
+}
+
+int getIndexByAddress(node_data* nodes, int count, struct sockaddr_in address){
+  int i;
+  for (i=0; i<count; i++){
+    struct sockaddr_in cur_address=nodes[i].conn.peer_address;
+    if (addressesAreEqual(address, cur_address)){
       return i;
     }
   }

@@ -32,8 +32,9 @@ typedef struct server_data {
 #endif
 
 void processAdminInput();
-void* runAcceptNodes();
+void* runAcceptTCPNodes();
 int initializeServer();
 void finalizeServer();
 
-
+void tryAddNewNode(struct sockaddr_in new_node);
+void* runProcessUDPNodes();

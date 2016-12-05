@@ -104,7 +104,6 @@ int recvMessageContent(message* msg, socket_conn conn){
   sprintf(data_len_format, "%%0%dd",
 	  CHARS_FOR_DATA_LEN_FIELD);
   sscanf(buf+5, data_len_format, &(msg->data_len));  
-  printf("Will read with data len %d\n", msg->data_len);
   if (msg->data_len != 0){
     readN(conn, buf+HEADER_LEN, msg->data_len);
     addData(msg, buf+HEADER_LEN, msg->data_len);

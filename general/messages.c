@@ -15,6 +15,14 @@ void createResponse(message* msg, unsigned char known_id, unsigned char response
   msg->response_to=response_to;
 }
 
+// used for UDP only
+int createAckForMessage(message* msg, unsigned char target_id){
+  fillGeneral(msg, -1);
+  msg->status_type=ACK;
+  msg->response_to=target_id;
+}
+
+
 int createMaxRequest(message* msg, unsigned char known_id){
   createRequest(msg, known_id);
   msg->info_type=MAX_INFO;
@@ -101,11 +109,19 @@ int createRecentResponse(message* msg, unsigned char known_id, unsigned char res
   addData(msg, data_buffer, strlen(data_buffer));
 }
 
-int createInitShutdownRequest(message* msg, unsigned char known_id, int amount){
+int createInitShutdownRequest(message* msg, unsigned char known_id){
   createRequest(msg, known_id);
   msg->info_type=INIT_SHUTDOWN;
   return 1;
 }
+
+
+
+/* int createRegisterClientRequest(message* msg, unsigned char known_id, int amount){ */
+/*   createRequest(msg, known_id); */
+/*   msg->info_type=REGISTER_CLIENT; */
+/*   return 1; */
+/* } */
 
 
 long writeNumsToChars(long* nums, long amount, char* raw){

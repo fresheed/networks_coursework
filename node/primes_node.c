@@ -30,6 +30,12 @@ int main(int argc, char* argv[]){
     printf("Server connection failed \n");
     exit(1);
   }
+  printf("Connected to server\n");
+
+  /* while (1){ */
+  /*   sleep(3); */
+  /*   printf("Node running...\n"); */
+  /* } */
 
   if (!initializeCurrentNode(conn)){
     printf("Node initialization failed\n");

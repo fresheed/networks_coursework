@@ -106,9 +106,9 @@ void processAdminInput(){
   }
 }
 
-void* runAcceptNodes(){
+void* runAcceptTCPNodes(){
   while(1){
-    socket_conn new_conn=acceptClient(server_params.listen_conn);
+    socket_conn new_conn=acceptTCPClient(server_params.listen_conn);
     if (new_conn.socket_fd > 0){
       cleanupZombieNodes(&nodes_params);
       addNewNode(&nodes_params, new_conn, &pool);
@@ -126,6 +126,50 @@ void* runAcceptNodes(){
   return NULL;
 }
 
+void* runProcessUDPNodes(){
+  char recv_buffer[LIMIT_DATA_LEN];
+  struct sockaddr_in cur_node;
+  int addr_len=sizeof(struct sockaddr_in);
+  const int recv_flags=0;
+  while(1){
+    memset(recv_buffer, 0, LIMIT_DATA_LEN);
+    int read_len=recvfrom(server_params.listen_conn.socket_fd,
+			  recv_buffer, LIMIT_DATA_LEN, recv_flags,
+			  (struct sockaddr*)&cur_node,
+			  &addr_len);
+    int node_index=getIndexByAddress(nodes_params.nodes, nodes_params.max_nodes, cur_node);
+    if (node_index == -1){
+      if (strcmp(recv_buffer, "REG")==0){
+	tryAddNewNode(cur_node);
+      } else {
+	printf("Message from unknown client: %s\n", recv_buffer);
+      }
+    } else {
+      int recipient_fd=nodes_params.nodes[node_index].conn.pipe_in_fd;
+      write(recipient_fd, recv_buffer, read_len);
+    }
+  }
+}
+
+void tryAddNewNode(struct sockaddr_in new_node){
+  printf("node tries to connect\n");
+  printAddress(new_node);
+  socket_conn conn=acceptUDPClient(server_params.listen_conn, new_node);
+  addNewNode(&nodes_params, conn, &pool);
+
+  const int send_flags=0;
+  char accept_connect[]="CONNECTED";
+  sendto(server_params.listen_conn.socket_fd, accept_connect, 
+	 strlen(accept_connect), send_flags,    
+	 (struct sockaddr*)&new_node,
+	 sizeof(new_node));
+
+  printf("Accepted client\n");
+}
+
+
+
+
 int initializeServer(){
   nodes_params.max_nodes=MAX_NODES;
   nodes_params.nodes=nodes;
@@ -139,13 +183,19 @@ int initializeServer(){
   createMutex(&nodes_params.nodes_mutex);
   createCondition(&nodes_params.nodes_refreshed);
 
-  socket_conn listen_conn=prepareTCPServerSocket();
+  socket_conn listen_conn=prepareServerSocket();
+
   if (listen_conn.socket_fd < 0){
     return 0;
   }
   server_params.listen_conn=listen_conn;
 
-  runThread(&server_params.accept_thread, &runAcceptNodes, NULL);
+#ifdef TCP_TRANSFER
+  runThread(&server_params.accept_thread, &runAcceptTCPNodes, NULL);
+#endif
+#ifdef UDP_TRANSFER
+  runThread(&server_params.accept_thread, &runProcessUDPNodes, NULL);
+#endif
 
   server_params.last_executor=0;
 

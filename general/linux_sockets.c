@@ -31,7 +31,7 @@ socket_conn prepareServerSocket(){
   return prepareTCPServerSocket();
 #else
 #ifdef UDP_TRANSFER
-  return prepareTCPServerSocket();
+  return prepareUDPServerSocket();
 #endif
 #endif
 }
@@ -60,15 +60,36 @@ socket_conn prepareTCPServerSocket(){
   return conn;
 }
 
-socket_conn acceptClient(socket_conn server_conn){
-#ifdef TCP_TRANSFER
-  return acceptTCPClient(server_conn);
-#else
-#ifdef UDP_TRANSFER
-  return acceptUDPClient(server_conn);
-#endif
-#endif
+socket_conn prepareUDPServerSocket(){
+  const int accept_port=3451;
+  struct sockaddr_in server_address;
+  printf("Initializing server...\n");
+  setServerAddressParams(&server_address, accept_port);  
+
+  int server_socket_fd=socket(AF_INET, SOCK_DGRAM, 0);
+  if (server_socket_fd < 0) {
+    perror("Error on socket creation\n");
+    return err_socket;
+  }
+  if (bind(server_socket_fd, (struct sockaddr *)&server_address,
+	   sizeof(server_address)) < 0){
+    perror("Error on bind\n");
+    return err_socket;
+  }
+
+  socket_conn conn = {.socket_fd=server_socket_fd};
+  return conn;
 }
+
+/* socket_conn acceptClient(socket_conn server_conn){ */
+/* #ifdef TCP_TRANSFER */
+/*   return acceptTCPClient(server_conn); */
+/* #else */
+/* #ifdef UDP_TRANSFER */
+/*   return acceptUDPClient(server_conn); */
+/* #endif */
+/* #endif */
+/* } */
 
 socket_conn acceptTCPClient(socket_conn server_conn){
   struct sockaddr_in client_address;
@@ -81,6 +102,20 @@ socket_conn acceptTCPClient(socket_conn server_conn){
 
   return conn;
 }
+
+socket_conn acceptUDPClient(socket_conn server_conn, struct sockaddr_in client_address){
+  printf("Adding client to socket %d...\n", server_conn.socket_fd);
+
+  socket_conn conn = {.socket_fd=server_conn.socket_fd, // same as listen
+		      .peer_address=client_address};
+  int pipe_fds[2];
+  pipe(pipe_fds);
+  conn.pipe_in_fd=pipe_fds[1]; // 1 is write end 
+  conn.pipe_out_fd=pipe_fds[0]; // 0 is read end 
+
+  return conn;
+}
+
 
 socket_conn connectToServer(char* hostname, int port){
 #ifdef TCP_TRANSFER
@@ -116,6 +151,48 @@ socket_conn connectToTCPServer(char* hostname, int port){
   return conn;
 }
 
+socket_conn connectToUDPServer(char* hostname, int port){
+  int node_socket_fd=socket(AF_INET, SOCK_DGRAM, 0);
+  if (node_socket_fd < 0){
+    printf("error opening node socket!\n");
+    return err_socket;
+  }
+
+  struct hostent* server=gethostbyname(hostname);
+  if (server==NULL){
+    printf("error resolving hostname!\n");
+    return err_socket;
+  }  
+
+  struct sockaddr_in server_address;
+  setServerAddressParamsForNode(&server_address,  server, port);
+
+  char reg_string[]="REG";
+  sendto(node_socket_fd, reg_string, strlen(reg_string), 
+	 0, (struct sockaddr*) &server_address, sizeof(struct sockaddr));
+  char server_response[20];  
+  memset(server_response, 0, 20);
+  int tmp;
+  recvfrom(node_socket_fd, server_response, 20, 0, 
+	   (struct sockaddr *) &server_address, &tmp);
+  if (strcmp(server_response, "CONNECTED")==0){
+    socket_conn conn={.socket_fd=node_socket_fd,
+		      .peer_address=server_address};
+    int pipe_fds[2];
+    pipe(pipe_fds);
+    conn.pipe_in_fd=pipe_fds[1]; // 1 is write end 
+    conn.pipe_out_fd=pipe_fds[0]; // 0 is read end 
+    return conn;
+  } else {
+    return err_socket;
+  }
+}
+
+int addressesAreEqual(struct sockaddr_in addr1, struct sockaddr_in addr2){
+  return ((addr1.sin_addr.s_addr==addr2.sin_addr.s_addr)
+	  && (addr1.sin_port==addr2.sin_port));
+
+}
 
 void shutdownWr(int fd){
   shutdown(fd, SHUT_WR);
