@@ -137,6 +137,10 @@ void* runProcessUDPNodes(){
 			  recv_buffer, LIMIT_DATA_LEN, recv_flags,
 			  (struct sockaddr*)&cur_node,
 			  &addr_len);
+    if (read_len <= 0) {
+      printf("Recvfrom failed\n");
+      break;
+    }
     int node_index=getIndexByAddress(nodes_params.nodes, nodes_params.max_nodes, cur_node);
     if (node_index == -1){
       if (strcmp(recv_buffer, "REG")==0){

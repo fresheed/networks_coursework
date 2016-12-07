@@ -44,7 +44,7 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
       to_read_left-=read_from_pipe;
     }    
   }
-
+  
   char recv_buffer[LIMIT_DATA_LEN];
   int recv_len=recvfrom(conn.socket_fd, recv_buffer, 
 			LIMIT_DATA_LEN, recv_flags,
@@ -83,6 +83,8 @@ void finalizeCurrentNode(node_data* node){
   printf("started to finalize current node\n");
 
   /* shutdownWr(node->conn); */
+  shutdownRdWr(node->conn.socket_fd);
+  close(node->conn.socket_fd);
   close(node->conn.pipe_in_fd);
 
   waitForThread(&(node->recv_thread));
