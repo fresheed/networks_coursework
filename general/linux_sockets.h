@@ -33,6 +33,7 @@ socket_conn acceptTCPClient(socket_conn server_conn);
 socket_conn acceptUDPClient(socket_conn server_conn, struct sockaddr_in client_address);
 
 void shutdownWr(int fd);
+void shutdownRd(int fd);
 void shutdownRdWr(int fd);
 void socketClose(int fd);
 void initSocketsRuntime();

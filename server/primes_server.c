@@ -153,6 +153,8 @@ void* runProcessUDPNodes(){
       write(recipient_fd, recv_buffer, read_len);
     }
   }
+  
+  finalizeNodes(&nodes_params);
 }
 
 void tryAddNewNode(struct sockaddr_in new_node){
@@ -170,8 +172,6 @@ void tryAddNewNode(struct sockaddr_in new_node){
 
   printf("Accepted client\n");
 }
-
-
 
 
 int initializeServer(){

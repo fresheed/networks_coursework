@@ -71,7 +71,7 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
 void endCommunication(node_data* node){
   waitForThread(&(node->proc_thread));
   waitForThread(&(node->send_thread));
-
+  
   // at this point read end of pipe is already closed 
 
   close(node->conn.pipe_in_fd); // may be already closed
@@ -100,10 +100,13 @@ void finalizeServer(server_data* server_params, nodes_info* nodes_params,
 		    primes_pool* pool){
   socket_conn server_conn=server_params->listen_conn;
   printf("shutting down and closing accept socket\n");
-  shutdownRdWr(server_conn.socket_fd);
-  socketClose(server_conn.socket_fd);
+  //shutdownRdWr(server_conn.socket_fd);
+  shutdownRd(server_conn.socket_fd);
 
   waitForThread(&(server_params->accept_thread));
+
+  shutdownWr(server_conn.socket_fd);
+  socketClose(server_conn.socket_fd);
 
   destroyCondition(&(nodes_params->nodes_refreshed));
   destroyPool(pool);

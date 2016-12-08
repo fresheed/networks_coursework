@@ -7,6 +7,7 @@
 #include "general/messages.h"
 #include "general/common_threads.h"
 #include "transfer/net_transfer.h"
+#include "general/integrity.h"
 
 void* common_send_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
@@ -14,15 +15,20 @@ void* common_send_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   int id=node->id;
   while(1){
+    printf("locked...\n");
     message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state
     if (!set->is_active){
       printf("Message set is unactive, stopping to send\n");
       break;
     }
-    if (!(sendMessageContent(msg, conn))){
+    maintainOutgoingBeforeSend(msg, set);
+    printf("sending...\n");
+    int send_result=sendMessageContent(msg, conn);
+    if (!send_result){
       printf("Send to node %d failed", id);
       break;
     } else {
+      maintainOutgoingAfterSend(msg, set);
       char next_status=(msg->status_type == REQUEST) ? WAITS_RESPONSE : EMPTY_SLOT;
       updateMessageStatus(msg, set, next_status);
     }
@@ -74,6 +80,7 @@ void* common_recv_thread(void* raw_node_ptr){
       markSetInactive(set);
       break;
     } else {
+      maintainIncoming(&msg, set);
       message* put_msg=putMessageInSet(msg, set, TO_PROCESS, 0);
       if (!set->is_active){
 	printf("Message set is unactive, stopping to receive\n");

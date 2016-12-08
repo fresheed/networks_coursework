@@ -209,11 +209,11 @@ message* lockNextMessage(messages_set* set, char cur_status){
 
   message* slot_ptr=NULL;
   while ( (slot_ptr=findMessageWithStatus(set, cur_status)) == NULL){
-    blockOnCondition(was_changed, mutex);
     if (!(set->is_active)){
       unlockMutex(mutex);
       return NULL;
     }
+    blockOnCondition(was_changed, mutex);
   }
 
   slot_ptr->current_status=OWNED;

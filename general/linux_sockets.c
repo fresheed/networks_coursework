@@ -198,6 +198,10 @@ void shutdownWr(int fd){
   shutdown(fd, SHUT_WR);
 }
 
+void shutdownRd(int fd){
+  shutdown(fd, SHUT_RD);
+}
+
 void shutdownRdWr(int fd){
   shutdown(fd, SHUT_RDWR);
 }
