@@ -15,14 +15,12 @@ void* common_send_thread(void* raw_node_ptr){
   messages_set* set=&(node->set);
   int id=node->id;
   while(1){
-    printf("locked...\n");
     message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state
     if (!set->is_active){
       printf("Message set is unactive, stopping to send\n");
       break;
     }
     maintainOutgoingBeforeSend(msg, set);
-    printf("sending...\n");
     int send_result=sendMessageContent(msg, conn);
     if (!send_result){
       printf("Send to node %d failed", id);

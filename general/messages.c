@@ -51,7 +51,6 @@ int createComputeRequest(message* msg, unsigned char known_id, long lower_bound,
 int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range){
   createResponse(msg, known_id, response_to);
   msg->info_type=COMPUTE_INFO;
-  printf("LDL: %ld\n", (long)LIMIT_DATA_LEN);
   //char data_buffer[LIMIT_DATA_LEN];
   char* data_buffer=(char*)malloc(LIMIT_DATA_LEN*sizeof(char));
   memset(data_buffer, 0, LIMIT_DATA_LEN);
@@ -63,9 +62,7 @@ int createComputeResponse(message* msg, unsigned char known_id, unsigned char re
   long header[]={range->lower_bound, range->upper_bound};
   appended=writeNumsToChars(header, 2, write_ptr);
   write_ptr+=appended;
-  printf("Writing...\n");
   appended=writeNumsToChars(range->numbers, primes_amount, write_ptr);
-  printf("Appended: %ld\n", appended);
   if (appended < 0){
     printf("Buffer size exceeded but IGNORED!\n");
     msg->is_ok=0;
@@ -300,6 +297,7 @@ void initMessagesSet(messages_set* set){
   set->is_active=1;
   createMutex(&(set->messages_mutex));
   createCondition(&(set->status_changed));
+  initUdpIntegrity(&(set->integrity));
 }
 
 

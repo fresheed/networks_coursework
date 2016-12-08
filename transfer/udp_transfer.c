@@ -50,7 +50,6 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
 			LIMIT_DATA_LEN, recv_flags,
 			(struct sockaddr*)&sender, 
 			&addr_len);
-  printf("Recv in dgram: %d\n", recv_len);
   write(conn.pipe_in_fd, recv_buffer, recv_len);
   if (!(addressesAreEqual(sender, conn.peer_address))){
     printf("Sender unknown:\n");

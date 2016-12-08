@@ -1,4 +1,6 @@
 #include "general/linux_threads.h"
+#include <errno.h>
+#include <stdio.h>
 
 void runThread(u_thread* ut, void* thread_func(void* arg), void* with_arg){
   pthread_t* thread=&(ut->thread);
@@ -32,6 +34,19 @@ void destroyCondition(u_condition* uc){
 void blockOnCondition(u_condition* uc, u_mutex* um){
   pthread_cond_wait(&(uc->cond), &(um->mutex));
 }
+
+void blockWithTimeout(u_condition* uc, u_mutex* um, int timeout_ms){
+  struct timespec start;
+  gettimeofday(&start);
+  struct timespec timeout_at=start;
+  timeout_at.tv_sec+=(timeout_ms/1000);
+  int result=pthread_cond_timedwait(&(uc->cond), &(um->mutex), &timeout_at);
+  if ((result!=ETIMEDOUT) && (result!=0)){
+      printf("Invalid cond_timedwait result: %d\n", result);
+      perror("timedwait failed");
+  }  
+}
+
 
 void signalAll(u_condition* uc){
   pthread_cond_broadcast(&(uc->cond));

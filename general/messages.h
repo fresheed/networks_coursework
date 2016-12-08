@@ -27,6 +27,14 @@
 // id + req/resp + type + resp_to + is_ok + data_len
 #define HEADER_LEN (1+1+1+1+1+CHARS_FOR_DATA_LEN_FIELD)
 
+typedef struct {
+  char cur_recv_id;
+  char cur_send_id;  
+  int was_acknowledged;
+  u_mutex ack_mutex;
+  u_condition updated_ack_status;
+} udp_integrity;
+
 typedef struct message {
   char internal_id;
   char status_type;
@@ -39,12 +47,15 @@ typedef struct message {
 } message;
 
 typedef struct messages_set {
-char next_id;
-unsigned int is_active;
-message messages[MESSAGES_SET_SIZE];
-unsigned int to_send, to_put, to_process;
-u_mutex messages_mutex;
-u_condition status_changed;
+  char next_id;
+  unsigned int is_active;
+  message messages[MESSAGES_SET_SIZE];
+  unsigned int to_send, to_put, to_process;
+  u_mutex messages_mutex;
+  u_condition status_changed;
+#ifdef UDP_TRANSFER
+  udp_integrity integrity;
+#endif
 } messages_set;
 
 #endif

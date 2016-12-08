@@ -22,12 +22,11 @@ void addNewNode(nodes_info* nodes_params, socket_conn new_conn, primes_pool* poo
     }
     blockOnCondition(signal, mutex);
   }
-  printf("Got slot %d\n", slot_ind);
 
   initNewNode(&(nodes[slot_ind]), nodes_params,
 	      nodes_params->unique_id_counter++,
 	      nodes_params->pending_conn, pool);
-  printf("Node %d: id=%d\n", slot_ind, nodes[slot_ind].id);
+  printf("New node %d: id=%d\n", slot_ind, nodes[slot_ind].id);
 
   nodes_params->pending_conn=err_socket;
 
