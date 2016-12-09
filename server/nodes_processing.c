@@ -95,10 +95,9 @@ void processKick(nodes_info* nodes_params, int id){
   // node receives message, calls shutdown(WR)
   // this server fails on read()
   // its recv thread call shutdown too and closes socket
-  // so we only need to wait on recv completion
-  socketClose(nodes[index].conn.pipe_in_fd);
-  
+  // so we only need to wait on recv completion  
   waitForThread(&(nodes[index].recv_thread));
+  socketClose(nodes[index].conn.pipe_in_fd);
   
   finalizeMessagesSet(&(nodes[index].set));
 

@@ -17,13 +17,16 @@ void* server_proc_thread(void* raw_node_ptr){
       printf("Message set is unactive, stopping to process\n");
       break;
     }
-    serverProcessMessage(next_msg, set, pool);
+    int to_cont=serverProcessMessage(next_msg, set, pool);
+    if (!to_cont){
+      stopServerThreadsForNode(node);
+    }
   }
   printf("Stopped to process node %d\n", id);
   return NULL;
 }
 
-void serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
+int serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
   if (msg->status_type == REQUEST) {
     if (msg->info_type == MAX_INFO) {
       message resp;
@@ -39,6 +42,9 @@ void serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
       getRecentPrimes(amount, pool, recent_primes);
       createRecentResponse(&resp, -1, msg->internal_id, recent_primes, amount);
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
+    } else if (msg->info_type == INIT_SHUTDOWN) {
+      printf("Node initiated shutdown\n");
+      return 0;
     }
     updateMessageStatus(msg, set, EMPTY_SLOT);
   } else {
@@ -69,6 +75,7 @@ void serverProcessMessage(message* msg, messages_set* set, primes_pool* pool){
     updateMessageStatus(msg, set, EMPTY_SLOT);
     updateMessageStatus(req, set, EMPTY_SLOT);
   }
+  return 1;
 }
 
 

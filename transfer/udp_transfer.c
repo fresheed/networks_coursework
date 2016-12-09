@@ -68,28 +68,54 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
 
 // should be executed from recv thread only
 void endCommunication(node_data* node){
+  //stopMessageThreads(node);
   waitForThread(&(node->proc_thread));
   waitForThread(&(node->send_thread));
-  
-  // at this point read end of pipe is already closed 
+}
 
+void stopMessageThreads(node_data* node){
+#ifdef IS_SERVER
+  stopServerThreadsForNode(node);
+#endif
+#ifdef IS_NODE
+  stopNodeThreads(node);
+#endif  
+}
+
+void stopNodeThreads(node_data* node){
+  // recv reads from socket and pipe, so need to close both
+  shutdownRdWr(node->conn.socket_fd);
   close(node->conn.pipe_in_fd); // may be already closed
   close(node->conn.pipe_out_fd);
+}
+
+void stopServerThreadsForNode(node_data* node){
+  // recv reads from pipe only, so close only pipe
+  close(node->conn.pipe_in_fd); // may be already closed
+  close(node->conn.pipe_out_fd);  
+}
+
+void notifyServerAboutShutdown(node_data* node){
+  message msg;
+  fillGeneral(&msg, -1);
+  createInitShutdownRequest(&msg, -1);
+  message* put_msg=putMessageInSet(msg, &(node->set), TO_SEND, 1);
 }
 
 
 void finalizeCurrentNode(node_data* node){
   printf("started to finalize current node\n");
-
+  notifyServerAboutShutdown(node);
   /* shutdownWr(node->conn); */
-  shutdownRdWr(node->conn.socket_fd);
-  close(node->conn.socket_fd);
-  close(node->conn.pipe_in_fd);
+  //stopNodeThreads(node);
+  //shutdownRdWr(node->conn.socket_fd);
 
   waitForThread(&(node->recv_thread));
   printf("node threads finished\n");
 
   finalizeMessagesSet(&(node->set));
+  
+  socketClose(node->conn.socket_fd);
 
   printf("finalized current node\n");
 

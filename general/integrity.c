@@ -1,50 +1,68 @@
 #include <stdio.h>
 #include "general/messages.h"
 #include "general/integrity.h"
+#include "general/init_sockets.h"
 
 void initUdpIntegrity(udp_integrity* integrity){
   integrity->cur_recv_id=0;
   integrity->cur_send_id=0;
+  integrity->retry_left=-1; // -1 means no retries required yet
+  integrity->was_acknowledged=1; // OK initially
 }
   
 int isAck(message* msg){
   return msg->status_type==ACK;
 }
 
+// return specifies is msg should be sent
 void maintainOutgoingBeforeSend(message* msg, messages_set* set){
-  if (isAck(msg)){
+  if (msg==NULL || isAck(msg)){ // null check if set inactive already
     return;
   }
   udp_integrity* integrity=&(set->integrity);
-  msg->internal_id=integrity->cur_send_id;
   lockMutex(&(integrity->ack_mutex));
-  integrity->was_acknowledged=0;
+  msg->internal_id=integrity->cur_send_id;
+  integrity->was_acknowledged=0; // state should become dirty after send 
+
   unlockMutex(&(integrity->ack_mutex));
 }
 
-void maintainOutgoingAfterSend(message* msg, messages_set* set){
+int performSend(message* msg, messages_set* set, socket_conn conn){
+  int retry_count=RETRY_ATTEMPTS;
+  while (retry_count-- > 0){
+    int tech_sent=sendMessageContent(msg, conn);
+    if (!tech_sent){ // technical problems, return immediately
+      return 0;
+    }
+    if (msg->info_type==INIT_SHUTDOWN) {
+      return 0; // no ack wait for shutdown
+    } 
+    if (maintainOutgoingAfterSend(msg, set)){ // received ack or msg is ack
+      return 1;
+    }
+    sleepMs(1000);
+  }
+  return 0;
+}
+
+
+int maintainOutgoingAfterSend(message* msg, messages_set* set){
   udp_integrity* integrity=&(set->integrity);
   if (isAck(msg)){
-    updatePeerStatus(integrity);
+    return updatePeerStatus(integrity);    
   } else {
-    waitConfirmed(msg, integrity);
+    return waitConfirmed(msg, integrity);
   }
 }
 
-void maintainIncoming(message* msg, messages_set* set){
-  udp_integrity* integrity=&(set->integrity);
-  if (isAck(msg)){
-    checkPeerAnswer(msg, integrity);
-  } else {
-    validatePeerQuery(msg, set);
-  }
-}
-
-void updatePeerStatus(udp_integrity* integrity){
+int updatePeerStatus(udp_integrity* integrity){
+  lockMutex(&(integrity->ack_mutex));
   integrity->cur_recv_id++;
+  unlockMutex(&(integrity->ack_mutex));
+  return 1;
 }
 
-void waitConfirmed(message* msg, udp_integrity* integrity){
+int waitConfirmed(message* msg, udp_integrity* integrity){
   lockMutex(&(integrity->ack_mutex));
   // checkPeerAnswer must be executed now
   if (!integrity->was_acknowledged){
@@ -56,19 +74,31 @@ void waitConfirmed(message* msg, udp_integrity* integrity){
     printf("Send for id=%d acknowledged\n", integrity->cur_send_id);
     integrity->cur_send_id++;
   } else {
-    printf("Failed to send - ack for id=%d not received!\n",  integrity->cur_send_id);
+    printf("Failed to send - ack for id=%d not received!\n",  integrity->cur_send_id);    
   }  
   unlockMutex(&(integrity->ack_mutex));
+  return integrity->was_acknowledged;
 }
 
+
+void maintainIncoming(message* msg, messages_set* set){
+  udp_integrity* integrity=&(set->integrity);
+  if (isAck(msg)){
+    checkPeerAnswer(msg, integrity);
+  } else {
+    validatePeerQuery(msg, set);
+  }
+}
+
+
 void checkPeerAnswer(message* msg, udp_integrity* integrity){
+  lockMutex(&(integrity->ack_mutex));
   int got_ack=(msg->response_to==integrity->cur_send_id);
   if (got_ack){
     //printf("Received with expected id %d\n", msg->response_to);
   } else {
     printf("Wrong ack received: id=%d, send failed\n", msg->response_to);
   }
-  lockMutex(&(integrity->ack_mutex));
   integrity->was_acknowledged=got_ack;
   signalAll(&(integrity->updated_ack_status));
   unlockMutex(&(integrity->ack_mutex));
@@ -76,14 +106,29 @@ void checkPeerAnswer(message* msg, udp_integrity* integrity){
 
 void validatePeerQuery(message* msg, messages_set* set){
   udp_integrity* integrity=&(set->integrity);
-  if (msg->internal_id==integrity->cur_recv_id){
-    message ack_msg;
-    fillGeneral(&ack_msg, -1);
-    createAckForMessage(&ack_msg, msg->internal_id);
-    message* put_msg=putMessageInSet(ack_msg, set, TO_SEND, 1);
+  char msg_id=msg->internal_id;
+  lockMutex(&(integrity->ack_mutex));
+  char cur_id=integrity->cur_recv_id;
+  if (msg_id==cur_id){
+    if (integrity->was_acknowledged){ // answer only in correct state
+      message ack_msg;
+      fillGeneral(&ack_msg, -1);
+      createAckForMessage(&ack_msg, msg_id);
+      message* put_msg=putMessageInSet(ack_msg, set, TO_SEND, 1);
+    } else {
+      printf("Ignoring message because now we have not acknowledged now\n");
+    }
+  } else if (msg_id==(cur_id-1)){
+      // it means peer has not received previous ack
+      message ack_msg;
+      fillGeneral(&ack_msg, -1);
+      createAckForMessage(&ack_msg, cur_id-1);
+      message* put_msg=putMessageInSet(ack_msg, set, TO_SEND, 1);
   } else {
-    printf("Unexpected msg with id=%d received\n", msg->internal_id);    
+    printf("Unexpected msg with id=%d received\n", msg_id);    
   }
+
+  unlockMutex(&(integrity->ack_mutex));
 }
 
 

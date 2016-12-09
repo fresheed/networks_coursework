@@ -16,21 +16,23 @@ void* common_send_thread(void* raw_node_ptr){
   int id=node->id;
   while(1){
     message* msg=lockNextMessage(set, TO_SEND); // now in OWNED state
+    maintainOutgoingBeforeSend(msg, set);
     if (!set->is_active){
       printf("Message set is unactive, stopping to send\n");
       break;
     }
-    maintainOutgoingBeforeSend(msg, set);
-    int send_result=sendMessageContent(msg, conn);
+    //int send_result=sendMessageContent(msg, conn);
+    int send_result=performSend(msg, set, conn);
     if (!send_result){
       printf("Send to node %d failed", id);
       break;
     } else {
-      maintainOutgoingAfterSend(msg, set);
+      //maintainOutgoingAfterSend(msg, set);
       char next_status=(msg->status_type == REQUEST) ? WAITS_RESPONSE : EMPTY_SLOT;
       updateMessageStatus(msg, set, next_status);
     }
   }
+  stopMessageThreads(node);
   printf("Stopped to send to node %d\n", id);
   return NULL;
 }
@@ -87,6 +89,7 @@ void* common_recv_thread(void* raw_node_ptr){
     }
   }
   printf("Stopped to receive from node %d\n", id);
+  stopMessageThreads(node);
   endCommunication(node);
   return NULL;
 }

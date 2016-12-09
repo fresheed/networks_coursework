@@ -31,6 +31,7 @@ typedef struct {
   char cur_recv_id;
   char cur_send_id;  
   int was_acknowledged;
+  int retry_left;
   u_mutex ack_mutex;
   u_condition updated_ack_status;
 } udp_integrity;

@@ -210,6 +210,10 @@ void socketClose(int fd){
   close(fd);  
 }
 
+void sleepMs(int ms){
+  sleep(ms/1000);
+}
+
 void initSocketsRuntime(){
   // only needed by windows
 }

@@ -21,7 +21,8 @@ void* node_proc_thread(void* raw_node_ptr){
     printf("Message processed\n");
     if (!continue_proc){
       printf("Shutting down connection...\n");
-      shutdownWr(node->conn.socket_fd);
+      //shutdownWr(node->conn.socket_fd);
+      stopNodeThreads(node);
     }
   }
   printf("Stopped to process this node\n");
@@ -67,12 +68,10 @@ int nodeProcessMessage(message* msg, messages_set* set){
       memset(range.numbers, 0, MAX_RANGE_SIZE);
       range.lower_bound=bounds[0];
       range.upper_bound=bounds[1];
-      // 1/2
       computePrimesInRange(&range);
       message resp;
       fillGeneral(&resp, -1);
       createComputeResponse(&resp, -1, msg->internal_id, &range);
-      printf("2/3\n");
       message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
       printf("Processed\n");
     } else if (msg->info_type == INIT_SHUTDOWN){
