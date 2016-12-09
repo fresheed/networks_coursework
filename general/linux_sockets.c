@@ -221,3 +221,15 @@ void initSocketsRuntime(){
 void finalizeSocketsRuntime(){
   // only needed by windows
 }
+
+void closePipeDescriptor(pipe_handle fd){
+  close(fd);  
+}
+
+int readFromPipe(pipe_handle fd, char* buffer, int to_read){
+  return read(fd, buffer, to_read);
+}
+
+int writeToPipe(pipe_handle fd, char* buffer, int to_read){
+  return write(fd, buffer, to_read);
+}

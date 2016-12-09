@@ -149,8 +149,8 @@ void* runProcessUDPNodes(){
 	printf("Message from unknown client: %s\n", recv_buffer);
       }
     } else {
-      int recipient_fd=nodes_params.nodes[node_index].conn.pipe_in_fd;
-      write(recipient_fd, recv_buffer, read_len);
+      pipe_handle recipient_fd=nodes_params.nodes[node_index].conn.pipe_in_fd;
+      writeToPipe(recipient_fd, recv_buffer, read_len);
     }
   }
   

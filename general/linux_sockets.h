@@ -11,11 +11,14 @@ typedef struct {
 } socket_conn;
 #endif
 #ifdef UDP_TRANSFER
+
+typedef int pipe_handle;
+
 typedef struct {
   int socket_fd;
   struct sockaddr_in peer_address; // not used in listen thread
-  int pipe_in_fd; // used in client threads
-  int pipe_out_fd; // used in client threads
+  pipe_handle pipe_in_fd; // used in client threads
+  pipe_handle pipe_out_fd; // used in client threads
 } socket_conn;
 #endif
 
@@ -45,3 +48,7 @@ socket_conn connectToTCPServer(char* hostname, int port);
 socket_conn connectToUDPServer(char* hostname, int port);
 
 int addressesAreEqual(struct sockaddr_in addr1, struct sockaddr_in addr2);
+
+int readFromPipe(pipe_handle fd, char* buffer, int to_read);
+int writeToPipe(pipe_handle fd, char* buffer, int to_read);
+void closePipeDescriptor(pipe_handle fd);

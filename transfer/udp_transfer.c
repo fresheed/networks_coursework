@@ -19,7 +19,7 @@ int recvBytesFromPeer(socket_conn conn, char* read_buffer, int to_read){
   // then it goes here
 #ifdef IS_SERVER
   // server: data goes into pipe from common recv thread
-  return read(conn.pipe_out_fd, read_buffer, to_read);  
+  return readFromPipe(conn.pipe_out_fd, read_buffer, to_read);  
 #endif
 #ifdef IS_NODE
   // node: recv thread also reads into pipe
@@ -37,7 +37,7 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
   // if some data left in pipe, read it first
   int pipe_has_data=poll(&(struct pollfd){ .fd = conn.pipe_out_fd, .events = POLLIN|POLLPRI }, 1, 0);
   if (pipe_has_data==1) {
-    read_from_pipe=read(conn.pipe_out_fd, read_buffer, to_read);
+    read_from_pipe=readFromPipe(conn.pipe_out_fd, read_buffer, to_read);
     if ((read_from_pipe == to_read) || (read_from_pipe == -1)){
       return read_from_pipe;
     } else {
@@ -50,14 +50,15 @@ int putDatagramToPipe(socket_conn conn, char* read_buffer, int to_read){
 			LIMIT_DATA_LEN, recv_flags,
 			(struct sockaddr*)&sender, 
 			&addr_len);
-  write(conn.pipe_in_fd, recv_buffer, recv_len);
+  writeToPipe(conn.pipe_in_fd, recv_buffer, recv_len);
   if (!(addressesAreEqual(sender, conn.peer_address))){
     printf("Sender unknown:\n");
     printAddress(sender);
     return -1;
   } else {
-    int read_from_pipe_2=read(conn.pipe_out_fd, read_buffer+read_from_pipe,
-			      to_read_left); 
+    int read_from_pipe_2=readFromPipe(conn.pipe_out_fd,
+				      read_buffer+read_from_pipe,
+				      to_read_left); 
     if ((read_from_pipe_2==to_read_left) || (read_from_pipe_2==-1)){
       return to_read;
     } else {
@@ -85,14 +86,14 @@ void stopMessageThreads(node_data* node){
 void stopNodeThreads(node_data* node){
   // recv reads from socket and pipe, so need to close both
   shutdownRdWr(node->conn.socket_fd);
-  close(node->conn.pipe_in_fd); // may be already closed
-  close(node->conn.pipe_out_fd);
+  closePipeDescriptor(node->conn.pipe_in_fd); // may be already closed
+  closePipeDescriptor(node->conn.pipe_out_fd);
 }
 
 void stopServerThreadsForNode(node_data* node){
   // recv reads from pipe only, so close only pipe
-  close(node->conn.pipe_in_fd); // may be already closed
-  close(node->conn.pipe_out_fd);  
+  closePipeDescriptor(node->conn.pipe_in_fd); // may be already closed
+  closePipeDescriptor(node->conn.pipe_out_fd);  
 }
 
 void notifyServerAboutShutdown(node_data* node){
@@ -101,7 +102,6 @@ void notifyServerAboutShutdown(node_data* node){
   createInitShutdownRequest(&msg, -1);
   message* put_msg=putMessageInSet(msg, &(node->set), TO_SEND, 1);
 }
-
 
 void finalizeCurrentNode(node_data* node){
   printf("started to finalize current node\n");
