@@ -51,8 +51,11 @@ void blockOnCondition(u_condition* uc, u_mutex* um){
 }
 
 void blockWithTimeout(u_condition* uc, u_mutex* um, int timeout_ms){
-    SignalObjectAndWait(um->mutex, uc->cond, timeout_ms, FALSE);
+    printf("blocked...");
+    int res=SignalObjectAndWait(um->mutex, uc->cond, timeout_ms, FALSE);
+    printf("signal: %d, %d\n", res, GetLastError());
     WaitForSingleObject(um->mutex, INFINITE);  // no time-out interval
+    printf("unblocked...");
 }
 
 void signalAll(u_condition* uc){

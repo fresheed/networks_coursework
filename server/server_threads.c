@@ -33,8 +33,6 @@ void* server_proc_thread(void* raw_node_ptr) {
 
 
 int serverProcMessage(message* msg, messages_set* set, primes_pool* pool) {
-    printf("in proc\n");
-    printMessage(msg);
     if (msg->status_type == REQUEST) {
         return processServerRequest(msg, set, pool);
     } else {

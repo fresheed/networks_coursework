@@ -28,18 +28,14 @@ int isAck(message* msg){
 // return specifies is msg should be sent
 void maintainOutgoingBeforeSend(message* msg, messages_set* set){
   if (msg==NULL || isAck(msg)){ // null check if set inactive already
-    printf("ack - ret\n");
     return;
   }
-      printf("c1");
   udp_integrity* integrity=&(set->integrity);
   lockMutex(&(integrity->ack_mutex));
   msg->internal_id=integrity->cur_send_id;
-      printf("c1");
   integrity->was_acknowledged=0; // state should become dirty after send
 
   unlockMutex(&(integrity->ack_mutex));
-      printf("c1");
 }
 
 int performSend(message* msg, messages_set* set, socket_conn conn){
