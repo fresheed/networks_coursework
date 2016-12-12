@@ -1,4 +1,7 @@
 #include <sys/types.h>
+#include <windows.h>
+#include <winbase.h>
+#include <ws2tcpip.h>
 
 #ifndef _INIT_SOCKETS_H
 #define _INIT_SOCKETS_H
@@ -9,6 +12,9 @@ typedef struct {
 } socket_conn;
 #endif
 #ifdef UDP_TRANSFER
+
+typedef HANDLE pipe_handle;
+
 typedef struct {
   int socket_fd;
   struct sockaddr_in peer_address; // not used in listen thread
@@ -37,8 +43,16 @@ void socketClose(int fd);
 void initSocketsRuntime();
 void finalizeSocketsRuntime();
 
+
 socket_conn connectToServer(char* hostname, int port);
 socket_conn connectToTCPServer(char* hostname, int port);
 socket_conn connectToUDPServer(char* hostname, int port);
 
 int addressesAreEqual(struct sockaddr_in addr1, struct sockaddr_in addr2);
+
+int readFromPipe(pipe_handle fd, char* buffer, int to_read);
+int writeToPipe(pipe_handle fd, char* buffer, int to_read);
+void closePipeDescriptor(pipe_handle fd);
+int pipeHasData(pipe_handle fd);
+
+void sleepMs(int ms);

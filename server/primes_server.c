@@ -25,7 +25,7 @@ int main(){
   }
   initPool(&pool);
 
-  printf("Range restrict: %d to %ld, max range size is %ld\n", 
+  printf("Range restrict: %d to %ld, max range size is %ld\n",
 	 0, (long)MAX_NUM, (long)MAX_RANGE_SIZE);
   processAdminInput();
 
@@ -153,8 +153,9 @@ void* runProcessUDPNodes(){
       writeToPipe(recipient_fd, recv_buffer, read_len);
     }
   }
-  
+
   finalizeNodes(&nodes_params);
+  return NULL;
 }
 
 void tryAddNewNode(struct sockaddr_in new_node){
@@ -165,8 +166,8 @@ void tryAddNewNode(struct sockaddr_in new_node){
 
   const int send_flags=0;
   char accept_connect[]="CONNECTED";
-  sendto(server_params.listen_conn.socket_fd, accept_connect, 
-	 strlen(accept_connect), send_flags,    
+  sendto(server_params.listen_conn.socket_fd, accept_connect,
+	 strlen(accept_connect), send_flags,
 	 (struct sockaddr*)&new_node,
 	 sizeof(new_node));
 

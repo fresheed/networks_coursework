@@ -29,7 +29,7 @@
 
 typedef struct {
   char cur_recv_id;
-  char cur_send_id;  
+  char cur_send_id;
   int was_acknowledged;
   int retry_left;
   u_mutex ack_mutex;
@@ -64,17 +64,19 @@ typedef struct messages_set {
 void createRequest(message* msg, unsigned char known_id);
 void createResponse(message* msg, unsigned char known_id, unsigned char response_to);
 
+int createAckForMessage(message* msg, unsigned char target_id);
 int createMaxRequest(message* msg, unsigned char known_id);
 int createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, long value);
 int createComputeRequest(message* msg, unsigned char known_id, long lower_bound, long upper_bound);
 int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range);
 int createRecentRequest(message* msg, unsigned char known_id, long amount);
-int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, long* nums, long amount);
+int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to,
+                         unsigned long* nums, unsigned long amount);
 int createInitShutdownRequest(message* msg, unsigned char known_id);
 //int createRegisterClientRequest(message* msg, unsigned char known_id, int amount);
 
-long writeNumsToChars(long* nums, long amount, char* raw);
-long readNumsFromChars(char* raw, long* nums, long amount);
+long writeNumsToChars(unsigned long* nums, unsigned long amount, char* raw);
+long readNumsFromChars(char* raw, unsigned long* nums, unsigned long amount);
 
 void fillGeneral(message* msg, unsigned char known_id);
 void addData(message* msg, char* data, unsigned int len);

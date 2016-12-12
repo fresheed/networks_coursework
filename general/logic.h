@@ -35,10 +35,12 @@ long checkRange(primes_range* to_put, primes_range* prev);
 void printPoolStatus(primes_pool* pool, int print_numbers);
 void printRangeStatus(primes_range* range, int print_numbers);
 
-void getRecentPrimes(long amount, primes_pool* pool, long* res);
+void getRecentPrimes(long amount, primes_pool* pool, unsigned long* res);
 void updateRecent(primes_pool* pool, primes_range* range);
+void setRangeNumbers(primes_range* range, unsigned long* numbers, unsigned long len);
 
 void computePrimesInRange(primes_range* range);
+int validateRangeParams(long lower, long upper);
 
 long getCurrentMaxPrime(primes_pool* pool);
 long getPrimesCountInRange(primes_range* range);

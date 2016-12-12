@@ -7,10 +7,10 @@
 void addNewNode(nodes_info* nodes_params, socket_conn new_conn, primes_pool* pool){
   node_data* nodes=nodes_params->nodes;
   u_mutex* mutex=&(nodes_params->nodes_mutex);
-  u_condition* signal=&(nodes_params->nodes_refreshed); 
+  u_condition* signal=&(nodes_params->nodes_refreshed);
 
   lockMutex(mutex);
-  
+
   nodes_params->pending_conn=new_conn;
 
   int slot_ind;
@@ -41,7 +41,6 @@ int assignTaskToNextNode(int last_executor, long lower_bound, long upper_bound, 
   lockMutex(mutex);
 
   int index=last_executor, count=0;
-  int id;
   while (count<max_nodes){
     if (nodes[index].id>0){ // node is active
       //id=nodes[index].id;
@@ -51,13 +50,13 @@ int assignTaskToNextNode(int last_executor, long lower_bound, long upper_bound, 
     count++;
   }
   if (count == max_nodes){
-    unlockMutex(mutex);    
+    unlockMutex(mutex);
     return -1;
   } else {
     message msg;
     fillGeneral(&msg, -1);
     createComputeRequest(&msg, -1, lower_bound, upper_bound);
-    message* put_msg=putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
+    putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
   }
 
   unlockMutex(mutex);
@@ -91,14 +90,14 @@ void processKick(nodes_info* nodes_params, int id){
   message msg;
   fillGeneral(&msg, -1);
   createInitShutdownRequest(&msg, -1);
-  message* put_msg=putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
+  putMessageInSet(msg, &(nodes[index].set), TO_SEND, 1);
   // node receives message, calls shutdown(WR)
   // this server fails on read()
   // its recv thread call shutdown too and closes socket
-  // so we only need to wait on recv completion  
+  // so we only need to wait on recv completion
   waitForThread(&(nodes[index].recv_thread));
   socketClose(nodes[index].conn.pipe_in_fd);
-  
+
   finalizeMessagesSet(&(nodes[index].set));
 
   // pipes should be closed already in recv thread
@@ -113,7 +112,7 @@ void finalizeNodes(nodes_info* nodes_params){
   int i;
   node_data* nodes=nodes_params->nodes;
   u_condition* signal=&(nodes_params->nodes_refreshed);
-  u_mutex* mutex=&(nodes_params->nodes_mutex); 
+  u_mutex* mutex=&(nodes_params->nodes_mutex);
 
   lockMutex(mutex);
 

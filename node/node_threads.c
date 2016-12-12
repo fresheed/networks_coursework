@@ -6,11 +6,11 @@
 #include "node/node_threads.h"
 #include "general/messages.h"
 #include "general/logic.h"
+#include "transfer/net_transfer.h"
 
 void* node_proc_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
   messages_set* set=&(node->set);
-  int id=node->id;
   while (1){
     message* next_msg=lockNextMessage(set, TO_PROCESS); // now in OWNED state
     if (next_msg == NULL){
@@ -44,9 +44,9 @@ int nodeProcessMessage(message* msg, messages_set* set){
 	if (!msg->is_ok){
 	  printf("Range request failed (probably data is too long)\n");
 	} else {
-	  long amount;
-	  long shift=readNumsFromChars(msg->data, &amount, 1);
-	  long recv_nums[200];
+	  unsigned long amount;
+      long shift=readNumsFromChars(msg->data, &amount, 1);
+	  unsigned long recv_nums[200];
 	  readNumsFromChars(msg->data+shift, recv_nums, amount);
 	  printf("Recent %ld primes: \n", amount);
 	  long i;
@@ -61,8 +61,7 @@ int nodeProcessMessage(message* msg, messages_set* set){
     updateMessageStatus(msg, set, EMPTY_SLOT);
   } else { // request
     if (msg->info_type == COMPUTE_INFO){
-      long primes[MAX_RANGE_SIZE];
-      long bounds[2];
+      unsigned long bounds[2];
       readNumsFromChars(msg->data, bounds, 2);
       primes_range range;
       memset(range.numbers, 0, MAX_RANGE_SIZE);
@@ -72,7 +71,7 @@ int nodeProcessMessage(message* msg, messages_set* set){
       message resp;
       fillGeneral(&resp, -1);
       createComputeResponse(&resp, -1, msg->internal_id, &range);
-      message* put_msg=putMessageInSet(resp, set, TO_SEND, 1);
+      putMessageInSet(resp, set, TO_SEND, 1);
       printf("Processed\n");
     } else if (msg->info_type == INIT_SHUTDOWN){
       printf("Server asked this node to shutdown...\n");

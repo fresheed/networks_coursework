@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "general/messages.h"
+#include "general/integrity.h"
 
 void createRequest(message* msg, unsigned char known_id){
   fillGeneral(msg, known_id);
@@ -20,12 +21,14 @@ int createAckForMessage(message* msg, unsigned char target_id){
   fillGeneral(msg, -1);
   msg->status_type=ACK;
   msg->response_to=target_id;
+  return 1;
 }
 
 
 int createMaxRequest(message* msg, unsigned char known_id){
   createRequest(msg, known_id);
   msg->info_type=MAX_INFO;
+  return 1;
 }
 
 int createMaxResponse(message* msg, unsigned char known_id, unsigned char response_to, long value){
@@ -34,9 +37,10 @@ int createMaxResponse(message* msg, unsigned char known_id, unsigned char respon
   //msg->data_len=value; // temp solution, should be passed via data
   char data_buffer[LIMIT_DATA_LEN];
   memset(data_buffer, 0, LIMIT_DATA_LEN);
-  long ivalue=value;
+  unsigned long ivalue=value;
   writeNumsToChars(&ivalue, 1, data_buffer);
   addData(msg, data_buffer, strlen(data_buffer));
+  return 1;
 }
 
 int createComputeRequest(message* msg, unsigned char known_id, long lower_bound, long upper_bound){
@@ -46,6 +50,7 @@ int createComputeRequest(message* msg, unsigned char known_id, long lower_bound,
   memset(data_buffer, 0, LIMIT_DATA_LEN);
   sprintf(data_buffer, "%ld %ld", lower_bound, upper_bound);
   addData(msg, data_buffer, strlen(data_buffer));
+  return 1;
 }
 
 int createComputeResponse(message* msg, unsigned char known_id, unsigned char response_to, primes_range* range){
@@ -56,10 +61,10 @@ int createComputeResponse(message* msg, unsigned char known_id, unsigned char re
   memset(data_buffer, 0, LIMIT_DATA_LEN);
   char* write_ptr=data_buffer;
 
-  long primes_amount=getPrimesCountInRange(range);
+  unsigned long primes_amount=getPrimesCountInRange(range);
   long appended=writeNumsToChars(&primes_amount, 1, write_ptr);
   write_ptr+=appended;
-  long header[]={range->lower_bound, range->upper_bound};
+  unsigned long header[]={range->lower_bound, range->upper_bound};
   appended=writeNumsToChars(header, 2, write_ptr);
   write_ptr+=appended;
   appended=writeNumsToChars(range->numbers, primes_amount, write_ptr);
@@ -69,11 +74,12 @@ int createComputeResponse(message* msg, unsigned char known_id, unsigned char re
     msg->data=NULL;
     msg->data_len=0;
     free(data_buffer);
-    return;
+    return 0;
   }
 
   addData(msg, data_buffer, strlen(data_buffer));
   free(data_buffer);
+  return 1;
 }
 
 int createRecentRequest(message* msg, unsigned char known_id, long amount){
@@ -83,9 +89,11 @@ int createRecentRequest(message* msg, unsigned char known_id, long amount){
   memset(data_buffer, 0, LIMIT_DATA_LEN);
   sprintf(data_buffer, "%ld ", amount);
   addData(msg, data_buffer, strlen(data_buffer));
+  return 1;
 }
 
-int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to, long* nums, long amount){
+int createRecentResponse(message* msg, unsigned char known_id, unsigned char response_to,
+                         unsigned long* nums, unsigned long amount){
   createResponse(msg, known_id, response_to);
   msg->info_type=RECENT_INFO;
   char data_buffer[LIMIT_DATA_LEN];
@@ -100,10 +108,11 @@ int createRecentResponse(message* msg, unsigned char known_id, unsigned char res
     msg->is_ok=0;
     msg->data=NULL;
     msg->data_len=0;
-    return;
+    return 0;
   }
 
   addData(msg, data_buffer, strlen(data_buffer));
+  return 1;
 }
 
 int createInitShutdownRequest(message* msg, unsigned char known_id){
@@ -121,7 +130,7 @@ int createInitShutdownRequest(message* msg, unsigned char known_id){
 /* } */
 
 
-long writeNumsToChars(long* nums, long amount, char* raw){
+long writeNumsToChars(unsigned long* nums, unsigned long amount, char* raw){
   long i;
   long appended;
   char* write_ptr=raw;
@@ -136,7 +145,7 @@ long writeNumsToChars(long* nums, long amount, char* raw){
   return (write_ptr-raw);
 }
 
-long readNumsFromChars(char* raw, long* nums, long amount){
+long readNumsFromChars(char* raw, unsigned long* nums, unsigned long amount){
   long i;
   long appended;
   char* write_ptr=raw;
@@ -158,6 +167,10 @@ void fillGeneral(message* msg, unsigned char known_id){
   } else {
     msg->internal_id=-1;
   }
+  msg->info_type=0;
+  msg->response_to=0;
+  msg->status_type=0;
+  msg->current_status=0;
 }
 
 void addData(message* msg, char* new_data, unsigned int len){
@@ -194,7 +207,6 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
   signalAll(was_changed);
 
   unlockMutex(mutex);
-
   return slot_ptr;
 }
 
@@ -212,7 +224,6 @@ message* lockNextMessage(messages_set* set, char cur_status){
     }
     blockOnCondition(was_changed, mutex);
   }
-
   slot_ptr->current_status=OWNED;
 
   unlockMutex(mutex);
@@ -222,7 +233,7 @@ message* lockNextMessage(messages_set* set, char cur_status){
 }
 
 message* findMessageWithStatus(messages_set* set, char status){
-  int* init_pos, cnt, pos;
+  unsigned int* init_pos, cnt, pos;
 
   switch(status){
   case EMPTY_SLOT:
@@ -241,7 +252,7 @@ message* findMessageWithStatus(messages_set* set, char status){
       result=&((set->messages)[pos]);
       break;
     }
-    pos=(++pos)%MESSAGES_SET_SIZE;
+    pos=(pos+1)%MESSAGES_SET_SIZE;
     cnt++;
   }
   //printf("checked slots from %d, returning slot %d\n", *init_pos, pos);
@@ -302,11 +313,16 @@ void initMessagesSet(messages_set* set){
 
 
 void printMessage(message* msg){
-  printf("%ld, %ld\n", sizeof(int), sizeof(long));
-  printf("IntID: %d, ST: %d, IT: %d, RT: %d, CS: %d, DL: %d\n",
-	 msg->internal_id, msg->status_type, msg->info_type,
-	 msg->response_to, msg->current_status, msg->data_len);
-  if (msg->data != NULL){
+//  printf("IntID: %d, ST: %d, IT: %d, RT: %d, CS: %d, DL: %d\n",
+//	 msg->internal_id, msg->status_type, msg->info_type,
+//	 msg->response_to, msg->current_status, msg->data_len);
+    printf("IntId: %d\n", msg->internal_id);
+    printf("st: %d\n", msg->status_type);
+    printf("it: %d\n", msg->info_type);
+    printf("rt: %d\n", msg->response_to);
+    printf("cs: %d\n", msg->current_status);
+    printf("dl: %d\n", msg->data_len);
+  if (msg->data!= NULL){
     printf("Addata: %s\n", msg->data);
   }
 }

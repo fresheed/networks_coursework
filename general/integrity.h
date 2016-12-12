@@ -15,7 +15,7 @@ void maintainOutgoingBeforeSend(message* msg, messages_set* set);
 
 int performSend(message* msg, messages_set* set, socket_conn conn);
 int maintainOutgoingAfterSend(message* msg, messages_set* set);
-void maintainIncoming(message* msg, messages_set* set);
+int maintainIncoming(message* msg, messages_set* set);
 
 int updatePeerStatus(udp_integrity* integrity);
 int waitConfirmed(message* msg, udp_integrity* integrity);

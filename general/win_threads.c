@@ -50,6 +50,11 @@ void blockOnCondition(u_condition* uc, u_mutex* um){
     WaitForSingleObject(um->mutex, INFINITE);  // no time-out interval
 }
 
+void blockWithTimeout(u_condition* uc, u_mutex* um, int timeout_ms){
+    SignalObjectAndWait(um->mutex, uc->cond, timeout_ms, FALSE);
+    WaitForSingleObject(um->mutex, INFINITE);  // no time-out interval
+}
+
 void signalAll(u_condition* uc){
 //  pthread_cond_broadcast(&(uc->cond));
     //SetEvent(uc->cond);

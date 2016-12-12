@@ -62,13 +62,9 @@ int sendMessageContent(message* msg, socket_conn conn){
   return (actual_sent == needed_len);
 }
 
-
-
-
 void* common_recv_thread(void* raw_node_ptr){
   node_data* node=(node_data*)raw_node_ptr;
   messages_set* set=&(node->set);
-  char buffer[100];
   int id=node->id;
   socket_conn conn=node->conn;
   while (1){
@@ -80,11 +76,14 @@ void* common_recv_thread(void* raw_node_ptr){
       markSetInactive(set);
       break;
     } else {
-      maintainIncoming(&msg, set);
-      message* put_msg=putMessageInSet(msg, set, TO_PROCESS, 0);
+      int should_process=maintainIncoming(&msg, set);
+      if (should_process){
+        putMessageInSet(msg, set, TO_PROCESS, 0);
+        printf("put msg in set\n");
+      }
       if (!set->is_active){
-	printf("Message set is unactive, stopping to receive\n");
-	break;
+            printf("Message set is unactive, stopping to receive\n");
+            break;
       }
     }
   }
@@ -111,7 +110,7 @@ int recvMessageContent(message* msg, socket_conn conn){
   char data_len_format[4];
   sprintf(data_len_format, "%%0%dd",
 	  CHARS_FOR_DATA_LEN_FIELD);
-  sscanf(buf+5, data_len_format, &(msg->data_len));  
+  sscanf(buf+5, data_len_format, &(msg->data_len));
   if (msg->data_len != 0){
     readN(conn, buf+HEADER_LEN, msg->data_len);
     addData(msg, buf+HEADER_LEN, msg->data_len);
@@ -127,7 +126,6 @@ int recvMessageContent(message* msg, socket_conn conn){
 int readN(socket_conn conn, char* read_buf, int message_len){
   //char tmp_buf[message_len];
   char tmp_buf[LIMIT_DATA_LEN];
-  const int recv_flags=0;
   int total_read=0;
   memset(read_buf, 0, message_len);
   int read_status=0;
@@ -147,11 +145,6 @@ int readN(socket_conn conn, char* read_buf, int message_len){
     //strcat(read_buf, tmp_buf);
     memcpy( (read_buf+total_read), (tmp_buf), actual_read_now);
     total_read+=actual_read_now;
-  }
-  int i;
-  for (i=0; i<total_read; i++){
-    int tmp;
-    tmp=read_buf[i];
   }
   return read_status==0;
 }

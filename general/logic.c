@@ -87,7 +87,8 @@ int checkRange2(primes_range* to_put, primes_range* prev){
 
 long checkRange(primes_range* to_put, primes_range* prev){
   unsigned long x=to_put->lower_bound, y=to_put->upper_bound;
-  unsigned long ll=prev->lower_bound, lu=prev->upper_bound;
+  //unsigned long ll=prev->lower_bound, lu=prev->upper_bound;
+  unsigned long lu=prev->upper_bound;
   unsigned long rl, ru;
   if (prev->next_range == NULL){
     ru=~0; // max unsigned int/long
@@ -163,7 +164,7 @@ void printRangeStatus(primes_range* range, int print_numbers){
   if (!print_numbers){
     return;
   }
-  long* numbers=range->numbers;
+  unsigned long* numbers=range->numbers;
   long i;
 
   for (i = 0; i<MAX_RANGE_SIZE; i++) {
@@ -197,7 +198,7 @@ void computePrimesInRange(primes_range* range){
   range->current_status=RANGE_COMPUTED;
 }
 
-void getRecentPrimes(long amount, primes_pool* pool, long* res){
+void getRecentPrimes(long amount, primes_pool* pool, unsigned long* res){
   lockMutex(&(pool->mutex));
   long i;
   for (i = 0; i<amount; i++) {
@@ -218,7 +219,7 @@ void updateRecent(primes_pool* pool, primes_range* range){
   }
 }
 
-void setRangeNumbers(primes_range* range, long* numbers, long len){
+void setRangeNumbers(primes_range* range, unsigned long* numbers, unsigned long len){
   long i;
   for (i = 0; i<len; i++) {
     range->numbers[i]=numbers[i];

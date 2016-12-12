@@ -26,6 +26,7 @@ void unlockMutex(u_mutex* um);
 void createCondition(u_condition* um);
 void destroyCondition(u_condition* uc);
 void blockOnCondition(u_condition* uc, u_mutex* um);
+void blockWithTimeout(u_condition* uc, u_mutex* um, int timeout_ms);
 void signalAll(u_condition* uc);
 void signalOne(u_condition* uc);
 void waitForThread(u_thread* ut);
