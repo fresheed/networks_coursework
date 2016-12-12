@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <netdb.h>
+#include <poll.h>
 #include "general/linux_sockets.h"
 
 void setServerAddressParams(struct sockaddr_in* server_address, int port){
@@ -232,4 +233,8 @@ int readFromPipe(pipe_handle fd, char* buffer, int to_read){
 
 int writeToPipe(pipe_handle fd, char* buffer, int to_read){
   return write(fd, buffer, to_read);
+}
+
+int pipeHasData(pipe_handle fd){
+  return poll(&(struct pollfd){ .fd = fd, .events = POLLIN|POLLPRI }, 1, 0);
 }

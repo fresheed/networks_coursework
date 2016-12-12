@@ -10,6 +10,7 @@
 #endif
 
 void initUdpIntegrity(udp_integrity* integrity);
+void finalizeUdpIntegrity(udp_integrity* integrity);
 int isAck(message* msg);
 void maintainOutgoingBeforeSend(message* msg, messages_set* set);
 

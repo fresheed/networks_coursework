@@ -52,3 +52,5 @@ int addressesAreEqual(struct sockaddr_in addr1, struct sockaddr_in addr2);
 int readFromPipe(pipe_handle fd, char* buffer, int to_read);
 int writeToPipe(pipe_handle fd, char* buffer, int to_read);
 void closePipeDescriptor(pipe_handle fd);
+
+int pipeHasData(pipe_handle fd);

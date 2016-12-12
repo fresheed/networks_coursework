@@ -11,6 +11,13 @@ void initUdpIntegrity(udp_integrity* integrity){
   integrity->cur_send_id=0;
   integrity->retry_left=-1; // -1 means no retries required yet
   integrity->was_acknowledged=1; // OK initially
+  createMutex(&integrity->ack_mutex);
+  createCondition(&integrity->updated_ack_status);
+}
+
+void finalizeUdpIntegrity(udp_integrity* integrity){
+  destroyMutex(&integrity->ack_mutex);
+  destroyCondition(&integrity->updated_ack_status);
 }
 
 int isAck(message* msg){
