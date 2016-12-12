@@ -26,11 +26,15 @@ void initPool(primes_pool* pool){
   createMutex(&(pool->mutex));
 }
 
-void putRangeInPool(primes_range src_range, primes_pool* pool){
+void smth(){
+
+}
+
+void putRangeInPool(primes_range* src_range, primes_pool* pool){
   lockMutex(&(pool->mutex));
 
   primes_range* new_range=(primes_range*)malloc(sizeof(primes_range));
-  *new_range=src_range; // copy src
+  *new_range=*src_range; // copy src
 
   // client must himself clean numbers!
   //memset(new_range->numbers, 0, MAX_RANGE_SIZE);
@@ -69,6 +73,7 @@ void putRangeInPool(primes_range src_range, primes_pool* pool){
   updateRecent(pool, new_range);
   unlockMutex(&(pool->mutex));
 }
+
 
 int checkRange2(primes_range* to_put, primes_range* prev){
   if (to_put->lower_bound > prev->upper_bound){

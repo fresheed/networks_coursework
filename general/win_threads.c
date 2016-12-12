@@ -3,7 +3,8 @@
 void runThread(u_thread* ut, void* thread_func(void* arg), void* with_arg){
 //  pthread_t* thread=&(ut->thread);
 //  pthread_create(thread, NULL,  thread_func, with_arg);
-  ut->thread=_beginthread(thread_func, 0, with_arg);
+    const int stack_size=200000;
+  ut->thread=_beginthread(thread_func, stack_size, with_arg);
 }
 
 void createMutex(u_mutex* um){

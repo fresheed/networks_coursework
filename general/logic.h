@@ -9,6 +9,7 @@
 #define RANGE_COMPUTED 2
 
 #define MAX_NUM 300000000
+//#define MAX_RANGE_SIZE 200000
 #define MAX_RANGE_SIZE 200000
 #define MAX_NUM_LENGTH 9
 
@@ -29,7 +30,7 @@ typedef struct primes_pool {
 
 void initPool(primes_pool* pool);
 void destroyPool(primes_pool* pool);
-void putRangeInPool(primes_range range, primes_pool* pool);
+void putRangeInPool(primes_range* range, primes_pool* pool);
 long checkRange(primes_range* to_put, primes_range* prev);
 
 void printPoolStatus(primes_pool* pool, int print_numbers);

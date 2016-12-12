@@ -33,6 +33,7 @@ void* server_proc_thread(void* raw_node_ptr) {
 
 
 int serverProcMessage(message* msg, messages_set* set, primes_pool* pool) {
+    printMessage(msg);
     if (msg->status_type == REQUEST) {
         return processServerRequest(msg, set, pool);
     } else {
@@ -86,7 +87,8 @@ int processServerResponse(message* msg, messages_set* set, primes_pool* pool) {
             range.upper_bound=bounds[1];
             memset(range.numbers, 0, MAX_RANGE_SIZE);
             setRangeNumbers(&range, recv_nums, amount);
-            putRangeInPool(range,  pool);
+            putRangeInPool(&range,  pool);
+            //smth();
         }
     }
     updateMessageStatus(msg, set, EMPTY_SLOT);

@@ -21,7 +21,6 @@ void finalizeUdpIntegrity(udp_integrity* integrity){
 }
 
 int isAck(message* msg){
-    printf("is ack?\n");
   return msg->status_type==ACK;
 }
 

@@ -335,6 +335,7 @@ void finalizeMessagesSet(messages_set* set){
   }
   destroyMutex(&(set->messages_mutex));
   destroyCondition(&(set->status_changed));
+  finalizeUdpIntegrity(&(set->integrity));
 }
 
 void markSetInactive(messages_set* set){
