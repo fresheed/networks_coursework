@@ -140,6 +140,7 @@ void* runProcessUDPNodes() {
         printf("Recvfrom: %d\n", read_len);
         printf("from socket %d\n", server_params.listen_conn.socket_fd);
         if (read_len <= 0) {
+#ifdef _WIN32
             int last_error=GetLastError();
             if (last_error != 10054){
                 // 10054 for UDP means ICMP fail - possibly because client disconnected
@@ -148,6 +149,10 @@ void* runProcessUDPNodes() {
             } else {
                 printf("10054 error\n");
             }
+#else
+                printf("Recvfrom failed\n" );
+                break;
+#endif
         }
         int node_index=getIndexByAddress(nodes_params.nodes, nodes_params.max_nodes, cur_node);
         if (node_index == -1) {
