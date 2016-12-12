@@ -130,6 +130,7 @@ void finalizeServer(server_data* server_params, nodes_info* nodes_params,
   socket_conn server_conn=server_params->listen_conn;
   printf("shutting down and closing accept socket\n");
   //shutdownRdWr(server_conn.socket_fd);
+  printf("fin socket %d\n", server_conn.socket_fd);
   shutdownRd(server_conn.socket_fd);
 
   waitForThread(&(server_params->accept_thread));

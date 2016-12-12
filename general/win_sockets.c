@@ -177,7 +177,8 @@ void shutdownWr(int socket_fd){
 }
 
 void shutdownRd(int socket_fd){
-  shutdown(socket_fd, SD_RECEIVE);
+  int res=shutdown(socket_fd, SD_RECEIVE);
+  printf("sh rd: %d\n", res);
 }
 
 void shutdownRdWr(int socket_fd){
