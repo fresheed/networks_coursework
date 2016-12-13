@@ -26,7 +26,7 @@ void finalizeUdpIntegrity(udp_integrity* integrity){
 int isAck(message* msg){
   int ack=msg->status_type==ACK;
   if (ack){
-    printf("Sending ack, id=%d\n", msg->internal_id);
+    printf("Sending ack, id=%d\n", msg->response_to);
   }
 }
 
