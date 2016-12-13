@@ -33,7 +33,6 @@ void* server_proc_thread(void* raw_node_ptr) {
 
 
 int serverProcMessage(message* msg, messages_set* set, primes_pool* pool) {
-    printMessage(msg);
     if (msg->status_type == REQUEST) {
         return processServerRequest(msg, set, pool);
     } else {
@@ -42,7 +41,6 @@ int serverProcMessage(message* msg, messages_set* set, primes_pool* pool) {
 }
 
 int processServerRequest(message* msg, messages_set* set, primes_pool* pool) {
-    printf("Here\n");
     if (msg->info_type == MAX_INFO) {
         message resp;
         fillGeneral(&resp, -1);

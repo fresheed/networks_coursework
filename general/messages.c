@@ -189,6 +189,9 @@ message* putMessageInSet(message msg, messages_set* set, char new_status, int ge
   u_condition* was_changed=&(set->status_changed);
 
   lockMutex(mutex);
+
+  //waitForConsistentSet(new_status, set);
+
   if (generate_id){
     msg.internal_id=(set->next_id)++;
   }
@@ -229,7 +232,6 @@ message* lockNextMessage(messages_set* set, char cur_status){
   unlockMutex(mutex);
 
   return slot_ptr;
-
 }
 
 message* findMessageWithStatus(messages_set* set, char status){

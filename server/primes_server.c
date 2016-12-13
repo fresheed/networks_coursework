@@ -137,8 +137,6 @@ void* runProcessUDPNodes() {
                               recv_buffer, LIMIT_DATA_LEN, recv_flags,
                               (struct sockaddr*)&cur_node,
                               &addr_len);
-        printf("Recvfrom: %d\n", read_len);
-        printf("from socket %d\n", server_params.listen_conn.socket_fd);
         if (read_len <= 0) {
 #ifdef _WIN32
             int last_error=GetLastError();

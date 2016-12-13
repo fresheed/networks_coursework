@@ -5,7 +5,7 @@
 #define integrity_structs
 
 #define ACK_WAIT_PERIOD 3
-#define RETRY_ATTEMPTS 3
+#define RETRY_ATTEMPTS 4
 
 #endif
 
@@ -18,7 +18,9 @@ int performSend(message* msg, messages_set* set, socket_conn conn);
 int maintainOutgoingAfterSend(message* msg, messages_set* set);
 int maintainIncoming(message* msg, messages_set* set);
 
-int updatePeerStatus(udp_integrity* integrity);
+int updatePeerStatus(message* msg, udp_integrity* integrity);
 int waitConfirmed(message* msg, udp_integrity* integrity);
 void checkPeerAnswer(message* msg, udp_integrity* integrity);
-void validatePeerQuery(message* msg, messages_set* set);
+int validatePeerQuery(message* msg, messages_set* set);
+
+int tryPushAck(messages_set* set, socket_conn conn);
